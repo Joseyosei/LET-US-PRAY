@@ -1,0 +1,7 @@
+{
+  "name": "LET US PRAY",
+  "description": "A scalable global Christian prayer platform featuring real-time feeds, live audio rooms, and AI-powered spiritual support.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
