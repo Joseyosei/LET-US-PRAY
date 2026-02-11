@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Home, Radio, Plus, Menu, Settings, Layout, LogOut, Mic, EyeOff, X, Video } from 'lucide-react';
 import PrayerFeed from './components/PrayerFeed';
 import AudioRooms from './components/AudioRooms';
-import ArchitectureView from './components/ArchitectureView';
 import { SettingsView } from './components/SettingsView';
 import { TestimonyStudio } from './components/TestimonyStudio';
 import { TopNav } from './components/TopNav';
@@ -338,8 +337,6 @@ export default function App() {
         );
       case AppView.STUDIO:
         return <TestimonyStudio />;
-      case AppView.ARCHITECTURE:
-        return <ArchitectureView />;
       case AppView.SETTINGS:
         return <SettingsView user={user!} onUpdateUser={handleUpdateUser} onLogout={handleLogout} />;
       default:
@@ -388,12 +385,6 @@ export default function App() {
               label="Settings" 
               active={currentView === AppView.SETTINGS} 
               onClick={() => setCurrentView(AppView.SETTINGS)} 
-            />
-            <SidebarItem 
-              icon={<Layout />} 
-              label="Architecture" 
-              active={currentView === AppView.ARCHITECTURE} 
-              onClick={() => setCurrentView(AppView.ARCHITECTURE)} 
             />
           </div>
         </nav>
@@ -447,12 +438,6 @@ export default function App() {
                 label="Settings" 
                 active={currentView === AppView.SETTINGS} 
                 onClick={() => { setCurrentView(AppView.SETTINGS); setMobileMenuOpen(false); }} 
-              />
-              <SidebarItem 
-                icon={<Layout />} 
-                label="Architecture" 
-                active={currentView === AppView.ARCHITECTURE} 
-                onClick={() => { setCurrentView(AppView.ARCHITECTURE); setMobileMenuOpen(false); }} 
               />
               <div className="border-t border-slate-100 mt-2 pt-2">
                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-red-600">

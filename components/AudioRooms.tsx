@@ -225,4 +225,34 @@ const AudioRooms: React.FC<AudioRoomsProps> = ({ rooms, activeRoom, onJoinRoom, 
                     <h3 className="text-white font-bold text-lg leading-tight mb-1 truncate">{room.title}</h3>
                     <div className="flex items-center gap-2 text-slate-300 text-xs">
                        <span className="truncate">with {room.host}</span>
-                       {room.hostVerified && <BadgeCheck className="w-3 h-
+                       {room.hostVerified && <BadgeCheck className="w-3 h-3 text-blue-400" />}
+                    </div>
+                 </div>
+                 
+                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 backdrop-blur-[2px]">
+                    <div className="bg-white/20 backdrop-blur-md rounded-full p-3 border border-white/40">
+                       <PlayCircle className="w-8 h-8 text-white fill-white/20" />
+                    </div>
+                 </div>
+              </div>
+
+              {/* Details */}
+              <div className="p-4 flex justify-between items-center">
+                 <div className="flex gap-2">
+                   {room.tags.slice(0, 2).map(t => (
+                      <span key={t} className="text-[10px] font-medium bg-slate-50 text-slate-500 px-2 py-1 rounded-md uppercase tracking-wide">{t.replace('#', '')}</span>
+                   ))}
+                 </div>
+                 <span className="text-xs font-semibold text-slate-400 flex items-center gap-1">
+                   <Clock className="w-3 h-3" /> {room.durationMinutes}m
+                 </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AudioRooms;

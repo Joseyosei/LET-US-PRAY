@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Mail, Lock, User, ArrowRight, Camera, Sparkles, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 interface AuthProps {
@@ -17,6 +18,19 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
   const [bio, setBio] = useState('');
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Skip intro if seen before in this session
+  useEffect(() => {
+    const hasSeenIntro = sessionStorage.getItem('lup_intro_seen');
+    if (hasSeenIntro) {
+      setShowIntro(false);
+    }
+  }, []);
+
+  const handleStart = () => {
+    setShowIntro(false);
+    sessionStorage.setItem('lup_intro_seen', 'true');
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +117,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             </p>
             
             <button 
-              onClick={() => setShowIntro(false)}
+              onClick={handleStart}
               className="w-full bg-white text-indigo-900 font-bold py-4 rounded-2xl shadow-xl hover:bg-indigo-50 active:scale-95 transition-all flex items-center justify-center gap-3 group relative overflow-hidden"
             >
               <span className="relative z-10 text-lg">Get Started</span>
@@ -160,13 +174,16 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700">Email address</label>
+                  <label htmlFor="reset-email" className="block text-sm font-medium text-slate-700">Email address</label>
                   <div className="mt-1 relative rounded-md shadow-sm">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Mail className="h-5 w-5 text-slate-400" />
                     </div>
                     <input
+                      id="reset-email"
+                      name="email"
                       type="email"
+                      autoComplete="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
@@ -238,9 +255,12 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-slate-700">Full Name</label>
+                        <label htmlFor="name" className="block text-sm font-medium text-slate-700">Full Name</label>
                         <input
+                          id="name"
+                          name="name"
                           type="text"
+                          autoComplete="name"
                           required
                           value={name}
                           onChange={(e) => setName(e.target.value)}
@@ -250,8 +270,10 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-slate-700">Bio (Optional)</label>
+                        <label htmlFor="bio" className="block text-sm font-medium text-slate-700">Bio (Optional)</label>
                         <textarea
+                          id="bio"
+                          name="bio"
                           rows={2}
                           value={bio}
                           onChange={(e) => setBio(e.target.value)}
@@ -263,13 +285,16 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                   )}
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700">Email address</label>
+                    <label htmlFor="email" className="block text-sm font-medium text-slate-700">Email address</label>
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Mail className="h-5 w-5 text-slate-400" />
                       </div>
                       <input
+                        id="email"
+                        name="email"
                         type="email"
+                        autoComplete="email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -280,13 +305,16 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700">Password</label>
+                    <label htmlFor="password" className="block text-sm font-medium text-slate-700">Password</label>
                     <div className="mt-1 relative rounded-md shadow-sm">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <Lock className="h-5 w-5 text-slate-400" />
                       </div>
                       <input
+                        id="password"
+                        name="password"
                         type={showPassword ? 'text' : 'password'}
+                        autoComplete={isLogin ? "current-password" : "new-password"}
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}

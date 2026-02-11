@@ -80,7 +80,6 @@ export enum AppView {
   FEED = 'FEED',
   ROOMS = 'ROOMS',
   STUDIO = 'STUDIO',
-  ARCHITECTURE = 'ARCHITECTURE',
   SETTINGS = 'SETTINGS'
 }
 

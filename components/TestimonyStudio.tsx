@@ -1,167 +1,266 @@
 
-import React, { useState } from 'react';
-import { Video, Wand2, Loader2, PlayCircle, Share2, AlertCircle, Film, Sparkles, Download } from 'lucide-react';
-import { generateVeoVideo } from '../services/geminiService';
+import React, { useState, useRef } from 'react';
+import { Video, Upload, X, Play, Pause, Sparkles, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { optimizeTestimony } from '../services/geminiService';
 
 export const TestimonyStudio: React.FC = () => {
-  const [prompt, setPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
-  const handleGenerate = async () => {
-    if (!prompt.trim()) return;
-    
-    setIsGenerating(true);
-    setError(null);
-    setVideoUrl(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-    try {
-      const url = await generateVeoVideo(prompt);
-      setVideoUrl(url);
-    } catch (err: any) {
-      setError(err.message || "Failed to generate video. Please try again.");
-    } finally {
-      setIsGenerating(false);
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setVideoFile(file);
+      setVideoPreview(URL.createObjectURL(file));
+      setUploadSuccess(false);
     }
   };
 
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith('video/')) {
+        setVideoFile(file);
+        setVideoPreview(URL.createObjectURL(file));
+        setUploadSuccess(false);
+      }
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleOptimize = async () => {
+    if (!description.trim()) return;
+    setIsOptimizing(true);
+    try {
+      const result = await optimizeTestimony(description);
+      setTitle(result.title);
+      setDescription(result.summary);
+      setTags(result.tags);
+    } catch (e) {
+      console.error(e);
+      alert("Could not optimize text. Please try again.");
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
+  const handleUpload = () => {
+    if (!videoFile || !title || !description) return;
+    setIsUploading(true);
+    // Simulate upload delay
+    setTimeout(() => {
+      setIsUploading(false);
+      setUploadSuccess(true);
+      // Reset form partially after success if needed
+    }, 2000);
+  };
+
+  const clearVideo = () => {
+    setVideoFile(null);
+    setVideoPreview(null);
+    setUploadSuccess(false);
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-900 p-6 h-full">
-      <div className="max-w-4xl mx-auto h-full flex flex-col md:flex-row gap-8">
+    <div className="flex-1 overflow-y-auto bg-slate-50 p-6 h-full">
+      <div className="max-w-5xl mx-auto">
         
-        {/* Left: Controls */}
-        <div className="flex-1 space-y-8">
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-900/50">
-                <Video className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">Testimony Studio</h2>
-                <p className="text-slate-400 text-sm">Create visual stories powered by Veo.</p>
-              </div>
-            </div>
-            
-            <p className="text-slate-300 mb-6 leading-relaxed">
-              Share your testimony or a prayer request. Our AI will generate a beautiful, 
-              cinematic background video to match your words. 
-              <span className="block mt-2 text-xs text-slate-500 uppercase tracking-wider font-bold">
-                <ShieldCheckIcon className="w-3 h-3 inline mr-1" /> Strict Moderation Active
-              </span>
-            </p>
-          </div>
-
-          <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 backdrop-blur-sm">
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              Your Testimony
-            </label>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="E.g., After months of searching, I finally found a job. God is good! #Blessing"
-              className="w-full h-32 bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none mb-4 transition-all"
-            />
-            
-            {error && (
-              <div className="mb-4 p-3 bg-red-900/30 border border-red-800/50 rounded-lg flex items-center gap-2 text-red-200 text-sm animate-in fade-in">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                {error}
-              </div>
-            )}
-
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating || !prompt.trim()}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] flex items-center justify-center gap-2 group relative overflow-hidden"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span className="animate-pulse">Creating Masterpiece...</span>
-                </>
-              ) : (
-                <>
-                  <Wand2 className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-                  Generate Video
-                </>
-              )}
-              {/* Shine effect */}
-              <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-12" />
-            </button>
-            
-            <p className="text-center text-xs text-slate-500 mt-4">
-              Powered by Google Veo 3.1 • 720p HD Generation
-            </p>
-          </div>
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Share Your Story</h1>
+          <p className="text-slate-600">Upload your video testimony. Authenticity changes lives.</p>
         </div>
 
-        {/* Right: Preview */}
-        <div className="flex-1 flex items-center justify-center">
-           <div className="relative w-[320px] aspect-[9/16] bg-black rounded-3xl border-8 border-slate-800 overflow-hidden shadow-2xl shadow-black">
-              {videoUrl ? (
-                <div className="relative w-full h-full group">
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          {/* Left Column: Video Uploader */}
+          <div className="flex-1">
+            <div 
+              className={`bg-white rounded-2xl border-2 border-dashed transition-all relative overflow-hidden aspect-[9/16] max-h-[600px] flex flex-col items-center justify-center ${
+                videoPreview ? 'border-transparent shadow-2xl' : 'border-slate-300 hover:border-indigo-400 hover:bg-slate-50'
+              }`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+            >
+              {videoPreview ? (
+                <div className="relative w-full h-full bg-black group">
                   <video 
-                    src={videoUrl} 
+                    src={videoPreview} 
                     className="w-full h-full object-cover" 
                     controls 
-                    autoPlay 
-                    loop 
                     playsInline
                   />
-                  {/* Text Overlay Simulation */}
+                  <button 
+                    onClick={clearVideo}
+                    className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                  {/* Overlay simulating how it looks in feed */}
                   <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
-                     <p className="text-white font-medium text-shadow-sm line-clamp-4 leading-relaxed">
-                       {prompt}
-                     </p>
-                     <div className="flex items-center gap-2 mt-3">
-                        <div className="w-6 h-6 rounded-full bg-white/20" />
-                        <span className="text-xs text-white/80">@User</span>
-                     </div>
+                     <p className="text-white font-bold text-lg mb-1">{title || "Your Title Here"}</p>
+                     <p className="text-white/80 text-sm line-clamp-2">{description || "Your description..."}</p>
                   </div>
                 </div>
               ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-600 p-8 text-center bg-slate-900/50">
-                  {isGenerating ? (
-                    <div className="space-y-4">
-                      <div className="w-16 h-16 rounded-full border-4 border-indigo-500/30 border-t-indigo-500 animate-spin mx-auto" />
-                      <p className="text-sm text-indigo-400 font-medium">Rendering pixels...</p>
-                      <p className="text-xs text-slate-500">This may take 1-2 minutes</p>
-                    </div>
-                  ) : (
-                    <>
-                       <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                         <Film className="w-8 h-8 opacity-50" />
-                       </div>
-                       <p className="font-medium text-slate-500">Video Preview</p>
-                       <p className="text-xs text-slate-600 mt-2">Your AI-generated testimony will appear here.</p>
-                    </>
-                  )}
+                <div className="text-center p-8">
+                  <div className="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Video className="w-10 h-10" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Upload Video</h3>
+                  <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto">
+                    Drag and drop your MP4, MOV file here, or click to browse.
+                    <br/><span className="text-xs text-slate-400 mt-2 block">Max size 500MB. 9:16 vertical recommended.</span>
+                  </p>
+                  <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                  >
+                    Select File
+                  </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="video/*" 
+                    onChange={handleFileSelect}
+                  />
                 </div>
               )}
-           </div>
-           
-           {videoUrl && (
-             <div className="absolute bottom-8 right-8 flex flex-col gap-2">
-                <button className="p-3 bg-white text-indigo-900 rounded-full shadow-lg hover:bg-slate-200 transition-colors" title="Download">
-                  <Download className="w-5 h-5" />
-                </button>
-                <button className="p-3 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-colors" title="Share to Feed">
-                  <Share2 className="w-5 h-5" />
-                </button>
-             </div>
-           )}
-        </div>
+            </div>
+          </div>
 
+          {/* Right Column: Details & AI Assistant */}
+          <div className="flex-1 space-y-6">
+            
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+               <div className="flex items-center justify-between mb-4">
+                 <h3 className="font-semibold text-slate-900">Details</h3>
+                 <div className="flex items-center gap-2 text-xs text-indigo-600 font-medium bg-indigo-50 px-2 py-1 rounded-md border border-indigo-100">
+                    <Sparkles className="w-3 h-3" /> AI Assistant Ready
+                 </div>
+               </div>
+
+               <div className="space-y-4">
+                 <div>
+                   <label className="block text-sm font-medium text-slate-700 mb-1">Raw Notes / Draft</label>
+                   <textarea 
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="I was feeling really down about my health, but then..."
+                      className="w-full h-32 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                   />
+                   <div className="flex justify-end mt-2">
+                     <button 
+                        onClick={handleOptimize}
+                        disabled={isOptimizing || !description.trim()}
+                        className="text-xs flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50 transition-colors"
+                     >
+                        {isOptimizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        {isOptimizing ? 'Polishing...' : 'Polish with AI'}
+                     </button>
+                   </div>
+                 </div>
+
+                 <div className={`transition-all duration-500 ${isOptimizing ? 'opacity-50 blur-[1px]' : 'opacity-100'}`}>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                      <input 
+                          type="text" 
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="e.g. My Healing Journey"
+                          className="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-semibold text-slate-900"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Hashtags</label>
+                      <div className="flex flex-wrap gap-2">
+                         {tags.map((tag, i) => (
+                           <span key={i} className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-medium border border-slate-200">
+                             {tag}
+                             <button onClick={() => setTags(tags.filter(t => t !== tag))} className="ml-1 hover:text-red-500">&times;</button>
+                           </span>
+                         ))}
+                         <input 
+                           type="text" 
+                           placeholder="+ Add tag"
+                           className="text-xs bg-transparent outline-none min-w-[60px] p-1"
+                           onKeyDown={(e) => {
+                             if (e.key === 'Enter') {
+                               const val = e.currentTarget.value;
+                               if (val) setTags([...tags, val.startsWith('#') ? val : `#${val}`]);
+                               e.currentTarget.value = '';
+                             }
+                           }}
+                         />
+                      </div>
+                    </div>
+                 </div>
+               </div>
+            </div>
+
+            {/* Upload Status / Actions */}
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+               {uploadSuccess ? (
+                 <div className="text-center py-4">
+                    <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 animate-in zoom-in">
+                       <CheckCircle2 className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-bold text-slate-900">Upload Successful!</h4>
+                    <p className="text-sm text-slate-500 mb-4">Your testimony is being processed and will appear in the feed shortly.</p>
+                    <button 
+                       onClick={() => { setUploadSuccess(false); clearVideo(); setTitle(''); setDescription(''); setTags([]); }}
+                       className="text-sm text-indigo-600 font-medium hover:underline"
+                    >
+                       Upload Another
+                    </button>
+                 </div>
+               ) : (
+                 <div className="space-y-4">
+                    <div className="flex items-start gap-3 p-3 bg-blue-50 text-blue-800 rounded-lg text-xs">
+                       <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                       <p>Your video will be reviewed by our moderation team before it goes public to ensure a safe community.</p>
+                    </div>
+                    <button 
+                      onClick={handleUpload}
+                      disabled={!videoFile || isUploading}
+                      className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                    >
+                       {isUploading ? (
+                         <>
+                           <Loader2 className="w-5 h-5 animate-spin" />
+                           Uploading...
+                         </>
+                       ) : (
+                         <>
+                           <Upload className="w-5 h-5" />
+                           Post Testimony
+                         </>
+                       )}
+                    </button>
+                 </div>
+               )}
+            </div>
+
+          </div>
+        </div>
       </div>
     </div>
   );
 };
-
-// Simple icon component helper
-const ShieldCheckIcon: React.FC<{className?: string}> = ({className}) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-    <path d="m9 12 2 2 4-4" />
-  </svg>
-);
