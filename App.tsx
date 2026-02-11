@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, Radio, Plus, Menu, Settings, Layout, LogOut, Mic, EyeOff, X, Video, PlaySquare } from 'lucide-react';
+import { Home, Radio, Plus, Menu, Settings, Layout, LogOut, Mic, EyeOff, X, Video, PlaySquare, Sparkles, MessageCircle, Car } from 'lucide-react';
 import PrayerFeed from './components/PrayerFeed';
 import AudioRooms from './components/AudioRooms';
 import { SettingsView } from './components/SettingsView';
 import { TestimonyStudio } from './components/TestimonyStudio';
 import { MediaLibrary } from './components/MediaLibrary';
+import { KarrView } from './components/KarrView';
+import PrayerPartnerChat from './components/PrayerPartnerChat';
 import { TopNav } from './components/TopNav';
 import { Auth } from './components/Auth';
 import { Prayer, AppView, AudioRoom, User, UserRole } from './types';
@@ -296,7 +298,7 @@ export default function App() {
 
   // Determine Context Aware FAB
   const getFloatingAction = () => {
-    if (activeRoom || currentView === AppView.STUDIO || currentView === AppView.MEDIA) return null; // No FAB in rooms, studio, media
+    if (activeRoom || currentView === AppView.STUDIO || currentView === AppView.MEDIA || currentView === AppView.CHAT || currentView === AppView.KARR) return null; 
     
     if (currentView === AppView.ROOMS) {
       return (
@@ -340,6 +342,10 @@ export default function App() {
         return <MediaLibrary />;
       case AppView.STUDIO:
         return <TestimonyStudio />;
+      case AppView.CHAT:
+        return <PrayerPartnerChat />;
+      case AppView.KARR:
+        return <KarrView userName={user!.name} userAvatar={user!.profileImage} />;
       case AppView.SETTINGS:
         return <SettingsView user={user!} onUpdateUser={handleUpdateUser} onLogout={handleLogout} />;
       default:
@@ -387,8 +393,26 @@ export default function App() {
             active={currentView === AppView.STUDIO} 
             onClick={() => setCurrentView(AppView.STUDIO)} 
           />
-          <div className="pt-6 mt-4 border-t border-slate-100">
-             <p className="px-4 text-xs font-semibold text-slate-400 uppercase mb-2 tracking-wider">System</p>
+          <SidebarItem 
+            icon={<Sparkles />} 
+            label="AI Companion" 
+            active={currentView === AppView.CHAT} 
+            onClick={() => setCurrentView(AppView.CHAT)} 
+          />
+          
+          {/* Integration Divider */}
+          <div className="pt-4 mt-2 mb-2 border-t border-slate-100">
+            <p className="px-4 text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">Services</p>
+            <SidebarItem 
+              icon={<Car className="text-lime-600" />} 
+              label="Karr Transport" 
+              active={currentView === AppView.KARR} 
+              onClick={() => setCurrentView(AppView.KARR)} 
+            />
+          </div>
+
+          <div className="pt-2 mt-2 border-t border-slate-100">
+             <p className="px-4 text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">System</p>
             <SidebarItem 
               icon={<Settings />} 
               label="Settings" 
@@ -412,12 +436,20 @@ export default function App() {
       <div className="flex-1 flex flex-col h-full relative w-full">
         
         {/* Top Navigation (Global) */}
-        {!activeRoom && (
+        {!activeRoom && currentView !== AppView.KARR && (
            <TopNav 
              user={user} 
              isMobileMenuOpen={mobileMenuOpen} 
              onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)} 
            />
+        )}
+        
+        {/* Custom Header for Karr View to allow full immersion or back */}
+        {currentView === AppView.KARR && (
+           <div className="md:hidden p-4 bg-white flex justify-between items-center shadow-sm z-20">
+              <span className="font-bold text-slate-900">Karr Integration</span>
+              <button onClick={() => setMobileMenuOpen(true)}><Menu className="w-6 h-6" /></button>
+           </div>
         )}
 
         {/* Mobile Navigation Menu Overlay */}
@@ -447,6 +479,18 @@ export default function App() {
                 label="Testimony Studio" 
                 active={currentView === AppView.STUDIO} 
                 onClick={() => { setCurrentView(AppView.STUDIO); setMobileMenuOpen(false); }} 
+              />
+              <SidebarItem 
+                icon={<Sparkles />} 
+                label="AI Companion" 
+                active={currentView === AppView.CHAT} 
+                onClick={() => { setCurrentView(AppView.CHAT); setMobileMenuOpen(false); }} 
+              />
+               <SidebarItem 
+                icon={<Car />} 
+                label="Karr Transport" 
+                active={currentView === AppView.KARR} 
+                onClick={() => { setCurrentView(AppView.KARR); setMobileMenuOpen(false); }} 
               />
                <SidebarItem 
                 icon={<Settings />} 

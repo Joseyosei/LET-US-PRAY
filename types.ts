@@ -81,7 +81,9 @@ export enum AppView {
   ROOMS = 'ROOMS',
   MEDIA = 'MEDIA',
   STUDIO = 'STUDIO',
-  SETTINGS = 'SETTINGS'
+  SETTINGS = 'SETTINGS',
+  CHAT = 'CHAT',
+  KARR = 'KARR'
 }
 
 export interface ModerationResult {

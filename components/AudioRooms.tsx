@@ -4,7 +4,7 @@ import { AudioRoom, UserRole, RoomParticipant, RoomMessage } from '../types';
 import { 
   Mic, MicOff, Video, VideoOff, Monitor, PhoneOff, MessageSquare, 
   Users, Hand, MoreVertical, Smile, Send, X, LayoutGrid, 
-  BadgeCheck, Shield, ShieldAlert, Plus, Globe, Clock, PlayCircle, ShieldCheck, Headphones
+  BadgeCheck, Shield, ShieldAlert, Plus, Globe, Clock, PlayCircle, ShieldCheck, Headphones, Heart
 } from 'lucide-react';
 
 interface AudioRoomsProps {
@@ -13,6 +13,12 @@ interface AudioRoomsProps {
   onJoinRoom: (room: AudioRoom) => void;
   onLeaveRoom: () => void;
   onCreateRoom: () => void;
+}
+
+interface Reaction {
+  id: string;
+  emoji: string;
+  left: number; // percentage
 }
 
 // Mock Data for Participants
@@ -34,6 +40,7 @@ const AudioRooms: React.FC<AudioRoomsProps> = ({ rooms, activeRoom, onJoinRoom, 
   const [participants, setParticipants] = useState<RoomParticipant[]>(MOCK_PARTICIPANTS);
   const [messages, setMessages] = useState<RoomMessage[]>(MOCK_MESSAGES);
   const [newMessage, setNewMessage] = useState('');
+  const [reactions, setReactions] = useState<Reaction[]>([]);
   
   // Controls State
   const [isMicOn, setIsMicOn] = useState(false); // User starts muted
@@ -50,6 +57,16 @@ const AudioRooms: React.FC<AudioRoomsProps> = ({ rooms, activeRoom, onJoinRoom, 
     }
   }, [messages, isChatOpen]);
 
+  // Clean up old reactions
+  useEffect(() => {
+    if (reactions.length > 0) {
+      const timer = setTimeout(() => {
+        setReactions(prev => prev.slice(1));
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [reactions]);
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -64,6 +81,15 @@ const AudioRooms: React.FC<AudioRoomsProps> = ({ rooms, activeRoom, onJoinRoom, 
     
     setMessages([...messages, msg]);
     setNewMessage('');
+  };
+
+  const triggerReaction = (emoji: string) => {
+    const newReaction: Reaction = {
+      id: Date.now().toString() + Math.random(),
+      emoji,
+      left: Math.random() * 80 + 10 // Random position between 10% and 90%
+    };
+    setReactions(prev => [...prev, newReaction]);
   };
 
   const VideoTile: React.FC<{ participant: RoomParticipant; isLarge?: boolean }> = ({ participant, isLarge }) => (
@@ -97,6 +123,28 @@ const AudioRooms: React.FC<AudioRoomsProps> = ({ rooms, activeRoom, onJoinRoom, 
   if (activeRoom) {
     return (
       <div className="flex h-full bg-slate-900 text-white overflow-hidden relative">
+        
+        {/* Floating Reactions Overlay */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+          {reactions.map(r => (
+            <div 
+              key={r.id} 
+              className="absolute bottom-20 text-4xl animate-float-up opacity-0"
+              style={{ left: `${r.left}%` }}
+            >
+              {r.emoji}
+            </div>
+          ))}
+        </div>
+        <style>{`
+          @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            10% { opacity: 1; transform: translateY(-20px) scale(1.2); }
+            100% { transform: translateY(-300px) scale(1); opacity: 0; }
+          }
+          .animate-float-up { animation: floatUp 2s ease-out forwards; }
+        `}</style>
+
         <div className={`flex-1 flex flex-col transition-all duration-300 ${isChatOpen ? 'mr-80' : ''}`}>
           <div className="h-14 px-4 flex items-center justify-between z-10 shrink-0 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm">
              <div className="flex items-center gap-3">
@@ -151,7 +199,15 @@ const AudioRooms: React.FC<AudioRoomsProps> = ({ rooms, activeRoom, onJoinRoom, 
              )}
           </div>
 
-          <div className="h-20 flex items-center justify-center gap-4 px-4 mb-2 shrink-0">
+          <div className="h-24 flex items-center justify-center gap-4 px-4 mb-2 shrink-0">
+             {/* Reaction Bar */}
+             <div className="bg-slate-800/80 backdrop-blur rounded-full px-4 py-2 flex gap-2 border border-slate-700 mr-2">
+                <button onClick={() => triggerReaction('❤️')} className="p-2 hover:bg-slate-700 rounded-full text-xl transition-transform hover:scale-125">❤️</button>
+                <button onClick={() => triggerReaction('🙏')} className="p-2 hover:bg-slate-700 rounded-full text-xl transition-transform hover:scale-125">🙏</button>
+                <button onClick={() => triggerReaction('🔥')} className="p-2 hover:bg-slate-700 rounded-full text-xl transition-transform hover:scale-125">🔥</button>
+                <button onClick={() => triggerReaction('🕊️')} className="p-2 hover:bg-slate-700 rounded-full text-xl transition-transform hover:scale-125">🕊️</button>
+             </div>
+
              <div className="bg-slate-800 rounded-full px-6 py-3 flex items-center gap-3 shadow-2xl border border-slate-700">
                 <button onClick={() => setIsMicOn(!isMicOn)} className={`p-3 rounded-full transition-all ${isMicOn ? 'bg-slate-600 hover:bg-slate-500' : 'bg-red-500 hover:bg-red-600'}`}>{isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}</button>
                 <button onClick={() => setIsCamOn(!isCamOn)} className={`p-3 rounded-full transition-all ${isCamOn ? 'bg-slate-600 hover:bg-slate-500' : 'bg-red-500 hover:bg-red-600'}`}>{isCamOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}</button>
