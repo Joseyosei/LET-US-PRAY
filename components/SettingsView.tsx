@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { User as UserIcon, Bell, Shield, LogOut, Save, Mail, Globe, Lock, Loader2, BadgeCheck, Users } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { User as UserIcon, Bell, Shield, LogOut, Save, Mail, Globe, Lock, Loader2, BadgeCheck, Users, Camera } from 'lucide-react';
 import { User, UserRole } from '../types';
 
 interface SettingsViewProps {
@@ -37,8 +37,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onUpdateUser, 
     name: user.name, 
     email: user.email,
     role: user.role,
-    isVerified: user.isVerified || false
+    isVerified: user.isVerified || false,
+    profileImage: user.profileImage || user.avatar
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [isSaving, setIsSaving] = useState(false);
   const [notifications, setNotifications] = useState({
     prayerRequests: true,
@@ -50,12 +53,28 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onUpdateUser, 
     publicProfile: true
   });
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, profileImage: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     // Simulate API call
     setTimeout(() => {
-      onUpdateUser(formData);
+      onUpdateUser({
+        ...formData,
+        // Ensure we save to both fields to maintain compatibility across components
+        profileImage: formData.profileImage,
+        avatar: formData.profileImage
+      });
       setIsSaving(false);
     }, 800);
   };
@@ -78,13 +97,37 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onUpdateUser, 
           <div className="p-6">
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-xl font-bold border-2 border-white shadow-sm">
-                  {formData.name.charAt(0)}
+                <div 
+                  className="relative group cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-xl font-bold border-2 border-white shadow-sm overflow-hidden">
+                    {formData.profileImage ? (
+                      <img src={formData.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      formData.name.charAt(0)
+                    )}
+                  </div>
+                  <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="w-6 h-6 text-white" />
+                  </div>
                 </div>
+                
                 <div className="space-y-1">
-                  <button type="button" className="text-sm text-indigo-600 font-medium hover:text-indigo-700 block">
+                  <button 
+                    type="button" 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-sm text-indigo-600 font-medium hover:text-indigo-700 block"
+                  >
                     Change Avatar
                   </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleFileChange} 
+                  />
                   <div className="text-xs text-slate-500">
                     Role: <span className="font-semibold capitalize">{user.role.replace('_', ' ')}</span>
                   </div>
