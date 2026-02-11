@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { ChatMessage, ModerationResult } from "../types";
 
@@ -25,11 +26,11 @@ export const moderatePrayerContent = async (text: string): Promise<ModerationRes
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Evaluate the following prayer request for a Christian platform. 
+      contents: `Evaluate the following text for a Christian platform. 
       1. Check if it contains offensive, hateful, or inappropriate content. 
       2. Suggest up to 3 short hashtags (e.g., #Healing, #Peace).
       
-      Prayer: "${text}"`,
+      Text: "${text}"`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -65,8 +66,6 @@ export const getSpiritualGuidance = async (
   if (!ai) return "I am unable to connect to the spiritual guidance service at the moment.";
 
   try {
-    // Convert app history to Gemini format
-    // limiting history to last 10 messages to save tokens
     const recentHistory = history.slice(-10).map(msg => ({
       role: msg.role,
       parts: [{ text: msg.text }]
@@ -85,5 +84,59 @@ export const getSpiritualGuidance = async (
   } catch (error) {
     console.error("Chat error:", error);
     return "I apologize, I am having trouble finding the right words right now. Please try again.";
+  }
+};
+
+export const generateVeoVideo = async (prompt: string): Promise<string | null> => {
+  const ai = initGemini();
+  const apiKey = getApiKey();
+  if (!ai || !apiKey) return null;
+
+  try {
+    // 1. Moderate first (Strict)
+    const moderation = await moderatePrayerContent(prompt);
+    if (!moderation.safe) {
+      throw new Error(`Content Unsafe: ${moderation.reason}`);
+    }
+
+    // 2. Generate Video
+    // We enhance the prompt to ensure the style fits the app
+    const enhancedPrompt = `Cinematic, abstract, peaceful, spiritual background video representing: ${prompt}. Soft lighting, slow motion, high quality, 4k, no text overlay, nature or light based imagery.`;
+
+    let operation = await ai.models.generateVideos({
+      model: 'veo-3.1-fast-generate-preview',
+      prompt: enhancedPrompt,
+      config: {
+        numberOfVideos: 1,
+        resolution: '720p',
+        aspectRatio: '9:16' // Portrait for mobile feed
+      }
+    });
+
+    // 3. Poll for completion
+    // Note: In a real backend this would be async/webhook based. 
+    // For frontend demo, we poll cautiously.
+    let retries = 0;
+    while (!operation.done && retries < 30) { // Max 5 minutes (30 * 10s)
+      await new Promise(resolve => setTimeout(resolve, 10000));
+      operation = await ai.operations.getVideosOperation({operation: operation});
+      retries++;
+    }
+
+    if (!operation.done) throw new Error("Video generation timed out");
+
+    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+    if (!downloadLink) throw new Error("No video URI returned");
+
+    // 4. Fetch the actual video bytes using the API key
+    const response = await fetch(`${downloadLink}&key=${apiKey}`);
+    if (!response.ok) throw new Error("Failed to download video");
+
+    const blob = await response.blob();
+    return URL.createObjectURL(blob);
+
+  } catch (error) {
+    console.error("Veo generation failed:", error);
+    throw error;
   }
 };
