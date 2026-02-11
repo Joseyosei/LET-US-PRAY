@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Prayer, UserRole } from '../types';
-import { Heart, MessageCircle, MapPin, Loader2, ThumbsUp, Hand, MoreHorizontal, Flag, ShieldAlert, EyeOff, Trash2, BadgeCheck, Shield, Share2, User, Play, Headphones, Moon, Sun, BookOpen } from 'lucide-react';
+import { Heart, MessageCircle, MapPin, Loader2, ThumbsUp, Hand, MoreHorizontal, Flag, ShieldAlert, EyeOff, Trash2, BadgeCheck, Shield, Share2, User, Play, Headphones, Moon, Sun, BookOpen, ChevronRight, ChevronLeft, Pause, Book } from 'lucide-react';
 
 interface PrayerFeedProps {
   prayers: Prayer[];
@@ -40,6 +40,22 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
+// Enhanced Bible Verse Data
+const BIBLE_VERSES = [
+  { id: 1, text: "In the beginning God created the heavens and the earth.", reference: "Genesis 1:1", bg: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000" },
+  { id: 2, text: "The Lord bless you and keep you; the Lord make his face shine on you.", reference: "Numbers 6:24-25", bg: "https://images.unsplash.com/photo-1500964757637-c85e8a162699?q=80&w=2000" },
+  { id: 3, text: "Be strong and courageous. Do not be afraid; do not be discouraged.", reference: "Joshua 1:9", bg: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000" },
+  { id: 4, text: "The Lord is my shepherd, I lack nothing.", reference: "Psalm 23:1", bg: "https://images.unsplash.com/photo-1484704324500-528d0ae4dc7d?q=80&w=2000" },
+  { id: 5, text: "Trust in the Lord with all your heart and lean not on your own understanding.", reference: "Proverbs 3:5", bg: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?q=80&w=2000" },
+  { id: 6, text: "For I know the plans I have for you, declares the Lord, plans to prosper you.", reference: "Jeremiah 29:11", bg: "https://images.unsplash.com/photo-1436891620584-47fd0e565afb?q=80&w=2000" },
+  { id: 7, text: "But seek first his kingdom and his righteousness, and all these things will be given to you.", reference: "Matthew 6:33", bg: "https://images.unsplash.com/photo-1502481851541-7cc861248387?q=80&w=2000" },
+  { id: 8, text: "For God so loved the world that he gave his one and only Son.", reference: "John 3:16", bg: "https://images.unsplash.com/photo-1534068590799-09895a701e3e?q=80&w=2000" },
+  { id: 9, text: "And we know that in all things God works for the good of those who love him.", reference: "Romans 8:28", bg: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?q=80&w=2000" },
+  { id: 10, text: "Love is patient, love is kind. It does not envy, it does not boast.", reference: "1 Corinthians 13:4", bg: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?q=80&w=2000" },
+  { id: 11, text: "I can do all this through him who gives me strength.", reference: "Philippians 4:13", bg: "https://images.unsplash.com/photo-1476900543704-4312b78632f8?q=80&w=2000" },
+  { id: 12, text: "He will wipe every tear from their eyes. There will be no more death.", reference: "Revelation 21:4", bg: "https://images.unsplash.com/photo-1444491741275-3747c53c99b4?q=80&w=2000" }
+];
+
 const CATEGORIES = [
   { id: 'all', label: 'For You', icon: SparklesIcon },
   { id: 'sleep', label: 'Sleep', icon: Moon },
@@ -48,10 +64,11 @@ const CATEGORIES = [
   { id: 'meditate', label: 'Meditate', icon: Headphones },
 ];
 
-const CONTENT_CARDS = [
-  { id: 1, title: "Bedtime Psalms", author: "Pastor Rick", duration: "15 min", image: "https://images.unsplash.com/photo-1519681393798-3828fb4090bb?q=80&w=600&auto=format&fit=crop", type: "Sleep" },
-  { id: 2, title: "Morning Gratitude", author: "Sarah Jakes", duration: "5 min", image: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?q=80&w=600&auto=format&fit=crop", type: "Prayer" },
-  { id: 3, title: "Overcoming Fear", author: "Dr. Tony Evans", duration: "22 min", image: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?q=80&w=600&auto=format&fit=crop", type: "Sermon" },
+const SCRIPTURE_JOURNEYS = [
+  { id: 1, title: "The Beginning", author: "Genesis", duration: "50 Chapters", image: "https://images.unsplash.com/photo-1519681393798-3828fb4090bb?q=80&w=600&auto=format&fit=crop", type: "Law" },
+  { id: 2, title: "Songs of Praise", author: "Psalms", duration: "150 Chapters", image: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?q=80&w=600&auto=format&fit=crop", type: "Poetry" },
+  { id: 3, title: "Good News", author: "Gospels", duration: "Matthew - John", image: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?q=80&w=600&auto=format&fit=crop", type: "History" },
+  { id: 4, title: "Revelation", author: "Prophecy", duration: "22 Chapters", image: "https://images.unsplash.com/photo-1531315630201-bb15abeb1653?q=80&w=600&auto=format&fit=crop", type: "Prophecy" },
 ];
 
 function SparklesIcon(props: any) {
@@ -72,6 +89,94 @@ function SparklesIcon(props: any) {
     </svg>
   )
 }
+
+const BibleCarousel: React.FC = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  useEffect(() => {
+    let interval: any;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setCurrentIndex((prev) => (prev + 1) % BIBLE_VERSES.length);
+      }, 8000); // 8 seconds per slide
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying]);
+
+  const goToNext = () => setCurrentIndex((prev) => (prev + 1) % BIBLE_VERSES.length);
+  const goToPrev = () => setCurrentIndex((prev) => (prev - 1 + BIBLE_VERSES.length) % BIBLE_VERSES.length);
+
+  const currentVerse = BIBLE_VERSES[currentIndex];
+
+  return (
+    <div className="relative h-80 w-full bg-slate-900 overflow-hidden group">
+      {/* Dynamic Background */}
+      {BIBLE_VERSES.map((verse, index) => (
+        <div 
+          key={verse.id}
+          className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentIndex ? 'opacity-100' : 'opacity-0'}`}
+        >
+          <img src={verse.bg} className="w-full h-full object-cover opacity-50" alt="" />
+        </div>
+      ))}
+      
+      {/* Overlay Gradients */}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+      <div className="absolute inset-0 bg-gradient-to-r from-slate-900/60 to-transparent"></div>
+
+      {/* Content */}
+      <div className="absolute inset-0 flex flex-col justify-end p-8 z-10 transition-all duration-700 transform">
+        <div className="max-w-3xl">
+          <span className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-4 border border-white/10">
+            <Book className="w-3 h-3" /> Living Word
+          </span>
+          
+          <h1 className="text-2xl md:text-4xl font-serif text-white mb-3 leading-tight drop-shadow-md animate-in fade-in slide-in-from-bottom-2 duration-700 key={currentIndex}">
+            "{currentVerse.text}"
+          </h1>
+          
+          <p className="text-slate-300 text-lg font-medium mb-8 animate-in fade-in slide-in-from-bottom-1 duration-700 delay-100 key={currentIndex + '_ref'}">
+            {currentVerse.reference}
+          </p>
+          
+          <div className="flex gap-3">
+             <button className="bg-white text-slate-900 px-6 py-2.5 rounded-full font-bold text-sm flex items-center gap-2 hover:bg-slate-100 transition-colors shadow-lg">
+               <BookOpen className="w-4 h-4" /> Read Chapter
+             </button>
+             <button 
+               onClick={() => setIsPlaying(!isPlaying)}
+               className="bg-white/10 backdrop-blur-md text-white px-4 py-2.5 rounded-full hover:bg-white/20 transition-colors border border-white/10"
+             >
+               {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+             </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="absolute bottom-8 right-8 flex gap-2 z-20">
+        <button onClick={goToPrev} className="p-2 rounded-full bg-black/30 text-white hover:bg-black/50 backdrop-blur-sm transition-colors border border-white/10">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <button onClick={goToNext} className="p-2 rounded-full bg-black/30 text-white hover:bg-black/50 backdrop-blur-sm transition-colors border border-white/10">
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Progress Indicators */}
+      <div className="absolute bottom-0 left-0 w-full flex p-4 gap-2 justify-center z-20">
+        {BIBLE_VERSES.map((_, idx) => (
+          <button 
+            key={idx} 
+            onClick={() => setCurrentIndex(idx)}
+            className={`h-1 rounded-full transition-all duration-500 ${idx === currentIndex ? 'w-8 bg-white' : 'w-2 bg-white/30 hover:bg-white/50'}`} 
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const PrayerCard: React.FC<{ prayer: Prayer; currentUserRole: UserRole; onInteract: (id: string, type: 'like' | 'pray' | 'request_prayer') => void }> = ({ prayer, currentUserRole, onInteract }) => {
   const [likeAnim, setLikeAnim] = useState(false);
@@ -164,29 +269,8 @@ const PrayerFeed: React.FC<PrayerFeedProps> = ({ prayers, currentUserRole, onInt
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 pb-20">
       
-      {/* HERO SECTION (Pray.com style) */}
-      <div className="relative h-72 w-full bg-slate-900 overflow-hidden">
-         <div className="absolute inset-0">
-           <img src="https://images.unsplash.com/photo-1436891620584-47fd0e565afb?q=80&w=2000&auto=format&fit=crop" className="w-full h-full object-cover opacity-60" alt="Hero" />
-           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
-           <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 to-transparent"></div>
-         </div>
-         
-         <div className="absolute bottom-0 left-0 p-6 w-full z-10">
-           <span className="text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2 block">Verse of the Day</span>
-           <h1 className="text-3xl font-serif text-white mb-2 leading-tight max-w-xl">"Be still, and know that I am God."</h1>
-           <p className="text-slate-300 text-sm mb-6">Psalm 46:10</p>
-           
-           <div className="flex gap-3">
-             <button className="bg-white text-slate-900 px-6 py-2.5 rounded-full font-semibold text-sm flex items-center gap-2 hover:bg-slate-100 transition-colors shadow-lg">
-               <Play className="w-4 h-4 fill-slate-900" /> Play Daily Prayer
-             </button>
-             <button className="bg-white/10 backdrop-blur-md text-white px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-white/20 transition-colors">
-               Read Devotional
-             </button>
-           </div>
-         </div>
-      </div>
+      {/* HERO SECTION - BIBLE CAROUSEL */}
+      <BibleCarousel />
 
       {/* CATEGORIES RAIL */}
       <div className="bg-white border-b border-slate-100 sticky top-0 z-20 shadow-sm">
@@ -202,27 +286,33 @@ const PrayerFeed: React.FC<PrayerFeedProps> = ({ prayers, currentUserRole, onInt
 
       <div className="max-w-4xl mx-auto p-4 space-y-8">
         
-        {/* HORIZONTAL CONTENT RAIL (Meditations) */}
+        {/* HORIZONTAL CONTENT RAIL (Scripture Journeys) */}
         <div>
           <div className="flex justify-between items-end mb-4 px-1">
-            <h2 className="text-xl font-bold text-slate-900">Sleep & Meditation</h2>
+            <h2 className="text-xl font-bold text-slate-900">Scripture Journeys</h2>
             <button className="text-sm text-indigo-600 font-medium hover:text-indigo-700">See All</button>
           </div>
           <div className="flex overflow-x-auto hide-scrollbar gap-4 pb-4 -mx-4 px-4">
-            {CONTENT_CARDS.map(card => (
+            {SCRIPTURE_JOURNEYS.map(card => (
               <div key={card.id} className="flex-shrink-0 w-48 group cursor-pointer">
-                <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 shadow-md">
-                   <img src={card.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={card.title} />
-                   <div className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                      <Play className="w-2 h-2 fill-white" /> {card.duration}
+                <div className="relative aspect-square rounded-2xl overflow-hidden mb-3 shadow-md bg-slate-800">
+                   <img src={card.image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80" alt={card.title} />
+                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                   <div className="absolute bottom-3 left-3 right-3">
+                      <p className="text-indigo-300 text-[10px] font-bold uppercase tracking-wider mb-0.5">{card.type}</p>
+                      <h3 className="text-white font-bold leading-tight">{card.title}</h3>
+                   </div>
+                   <div className="absolute top-2 right-2 bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {card.duration}
                    </div>
                 </div>
-                <h3 className="font-bold text-slate-900 leading-tight group-hover:text-indigo-600 transition-colors">{card.title}</h3>
-                <p className="text-xs text-slate-500 mt-1">{card.author}</p>
               </div>
             ))}
-             <div className="flex-shrink-0 w-48 flex items-center justify-center bg-slate-100 rounded-2xl border-2 border-dashed border-slate-200">
-                <span className="text-sm font-medium text-slate-500">View More</span>
+             <div className="flex-shrink-0 w-48 flex items-center justify-center bg-slate-100 rounded-2xl border-2 border-dashed border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+                <div className="text-center">
+                   <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                   <span className="text-sm font-medium text-slate-500">Full Bible</span>
+                </div>
              </div>
           </div>
         </div>

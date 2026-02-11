@@ -1,12 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, Radio, Plus, Menu, Settings, Layout, LogOut, Mic, EyeOff, X, Video, PlaySquare, Sparkles, MessageCircle, Car } from 'lucide-react';
+import { Home, Radio, Plus, Menu, Settings, Layout, LogOut, Mic, EyeOff, X, Video, PlaySquare, Sparkles, MessageCircle } from 'lucide-react';
 import PrayerFeed from './components/PrayerFeed';
 import AudioRooms from './components/AudioRooms';
 import { SettingsView } from './components/SettingsView';
 import { TestimonyStudio } from './components/TestimonyStudio';
 import { MediaLibrary } from './components/MediaLibrary';
-import { KarrView } from './components/KarrView';
 import PrayerPartnerChat from './components/PrayerPartnerChat';
 import { TopNav } from './components/TopNav';
 import { Auth } from './components/Auth';
@@ -298,7 +297,7 @@ export default function App() {
 
   // Determine Context Aware FAB
   const getFloatingAction = () => {
-    if (activeRoom || currentView === AppView.STUDIO || currentView === AppView.MEDIA || currentView === AppView.CHAT || currentView === AppView.KARR) return null; 
+    if (activeRoom || currentView === AppView.STUDIO || currentView === AppView.MEDIA || currentView === AppView.CHAT) return null; 
     
     if (currentView === AppView.ROOMS) {
       return (
@@ -344,8 +343,6 @@ export default function App() {
         return <TestimonyStudio />;
       case AppView.CHAT:
         return <PrayerPartnerChat />;
-      case AppView.KARR:
-        return <KarrView userName={user!.name} userAvatar={user!.profileImage} />;
       case AppView.SETTINGS:
         return <SettingsView user={user!} onUpdateUser={handleUpdateUser} onLogout={handleLogout} />;
       default:
@@ -400,17 +397,6 @@ export default function App() {
             onClick={() => setCurrentView(AppView.CHAT)} 
           />
           
-          {/* Integration Divider */}
-          <div className="pt-4 mt-2 mb-2 border-t border-slate-100">
-            <p className="px-4 text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">Services</p>
-            <SidebarItem 
-              icon={<Car className="text-lime-600" />} 
-              label="Karr Transport" 
-              active={currentView === AppView.KARR} 
-              onClick={() => setCurrentView(AppView.KARR)} 
-            />
-          </div>
-
           <div className="pt-2 mt-2 border-t border-slate-100">
              <p className="px-4 text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">System</p>
             <SidebarItem 
@@ -436,7 +422,7 @@ export default function App() {
       <div className="flex-1 flex flex-col h-full relative w-full">
         
         {/* Top Navigation (Global) */}
-        {!activeRoom && currentView !== AppView.KARR && (
+        {!activeRoom && (
            <TopNav 
              user={user} 
              isMobileMenuOpen={mobileMenuOpen} 
@@ -444,14 +430,6 @@ export default function App() {
            />
         )}
         
-        {/* Custom Header for Karr View to allow full immersion or back */}
-        {currentView === AppView.KARR && (
-           <div className="md:hidden p-4 bg-white flex justify-between items-center shadow-sm z-20">
-              <span className="font-bold text-slate-900">Karr Integration</span>
-              <button onClick={() => setMobileMenuOpen(true)}><Menu className="w-6 h-6" /></button>
-           </div>
-        )}
-
         {/* Mobile Navigation Menu Overlay */}
         {mobileMenuOpen && (
           <div className="md:hidden absolute top-16 left-0 w-full bg-white border-b border-slate-200 shadow-xl z-50 p-4 animate-in slide-in-from-top-2 duration-200">
@@ -485,12 +463,6 @@ export default function App() {
                 label="AI Companion" 
                 active={currentView === AppView.CHAT} 
                 onClick={() => { setCurrentView(AppView.CHAT); setMobileMenuOpen(false); }} 
-              />
-               <SidebarItem 
-                icon={<Car />} 
-                label="Karr Transport" 
-                active={currentView === AppView.KARR} 
-                onClick={() => { setCurrentView(AppView.KARR); setMobileMenuOpen(false); }} 
               />
                <SidebarItem 
                 icon={<Settings />} 
