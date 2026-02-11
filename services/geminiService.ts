@@ -20,7 +20,7 @@ const initGemini = () => {
 export const moderatePrayerContent = async (text: string): Promise<ModerationResult> => {
   const ai = initGemini();
   if (!ai) {
-    return { safe: true, suggestedTags: ["#General"] }; // Fallback if no API key
+    return { safe: true, suggestedTags: ["#General"] }; 
   }
 
   try {
@@ -53,7 +53,6 @@ export const moderatePrayerContent = async (text: string): Promise<ModerationRes
     return JSON.parse(jsonStr) as ModerationResult;
   } catch (error) {
     console.error("Moderation failed:", error);
-    // Fail safe mostly to allow testing if API limits hit, but in prod you might fail closed
     return { safe: true, suggestedTags: ["#Prayer"] };
   }
 };
@@ -123,6 +122,39 @@ export const optimizeTestimony = async (draftDescription: string): Promise<{titl
 
   } catch (error) {
     console.error("Optimization failed:", error);
+    throw error;
+  }
+};
+
+/**
+ * Generate a cinematic video testimony using Veo 3.1
+ */
+export const generateVideoTestimony = async (prompt: string): Promise<string> => {
+  const ai = initGemini();
+  if (!ai) throw new Error("AI Service unavailable");
+
+  try {
+    let operation = await ai.models.generateVideos({
+      model: 'veo-3.1-fast-generate-preview',
+      prompt: `Cinematic, spiritual Christian testimony video: ${prompt}. Highly aesthetic, emotional, lighting like a professional film. 4K quality.`,
+      config: {
+        numberOfVideos: 1,
+        resolution: '1080p',
+        aspectRatio: '9:16'
+      }
+    });
+
+    while (!operation.done) {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      operation = await ai.operations.getVideosOperation({ operation: operation });
+    }
+
+    const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+    if (!downloadLink) throw new Error("Video generation failed to return a link");
+    
+    return `${downloadLink}&key=${process.env.API_KEY}`;
+  } catch (error) {
+    console.error("Video generation failed:", error);
     throw error;
   }
 };
