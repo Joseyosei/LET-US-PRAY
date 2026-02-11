@@ -1,12 +1,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Clock, Heart, Share2, MoreVertical, PlayCircle, Headphones, Video, BookOpen, Search, Filter, X, Upload, Calendar, ChevronDown, Pause, Volume2, VolumeX, Maximize, FileVideo } from 'lucide-react';
+import { Play, Clock, Heart, Share2, MoreVertical, PlayCircle, Headphones, Video, BookOpen, Search, Filter, X, Upload, Calendar, ChevronDown, Pause, Volume2, VolumeX, Maximize, FileVideo, Users } from 'lucide-react';
 
 interface MediaItem {
   id: string;
   title: string;
   author: string;
-  type: 'sermon' | 'worship' | 'podcast' | 'devotional';
+  authorAvatar?: string;
+  type: 'sermon' | 'worship' | 'podcast' | 'devotional' | 'testimony';
   duration: string;
   thumbnail: string;
   src?: string;
@@ -22,6 +23,7 @@ const MEDIA_CATEGORIES = [
   { id: 'sermon', label: 'Sermons', icon: BookOpen },
   { id: 'worship', label: 'Worship', icon: Headphones },
   { id: 'podcast', label: 'Podcasts', icon: Filter },
+  { id: 'testimony', label: 'Testimonies', icon: Users },
 ];
 
 const MOCK_MEDIA: MediaItem[] = [
@@ -29,6 +31,7 @@ const MOCK_MEDIA: MediaItem[] = [
     id: '1',
     title: "Walking in Faith",
     author: "Pastor Michael Todd",
+    authorAvatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?fit=crop&w=150&h=150",
     type: 'sermon',
     duration: "45:20",
     thumbnail: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800&auto=format&fit=crop",
@@ -40,9 +43,55 @@ const MOCK_MEDIA: MediaItem[] = [
     description: "In this powerful sermon, Pastor Michael Todd explores what it truly means to walk by faith and not by sight. Learn practical steps to trust God in uncertainty."
   },
   {
+    id: 't1',
+    title: "Love in God's Timing",
+    author: "Rebecca & Thomas",
+    authorAvatar: "https://images.unsplash.com/photo-1621621667797-2144d1887019?q=80&w=200&auto=format&fit=crop", // Couple portrait
+    type: 'testimony',
+    duration: "03:45",
+    thumbnail: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?q=80&w=800&auto=format&fit=crop", // Romantic sunset
+    src: "https://assets.mixkit.co/videos/preview/mixkit-couple-walking-in-a-field-of-wheat-4591-large.mp4",
+    views: "850",
+    date: "Married 2 years",
+    timestamp: Date.now() - 100000000,
+    tags: ["#Marriage", "#Purity", "#Relationships"],
+    description: "\"We were both tired of the modern dating scene. Finding this community was a breath of fresh air. Knowing we shared the same boundaries from day one made everything easier.\""
+  },
+  {
+    id: 't2',
+    title: "Respected & Cherished",
+    author: "Emily & David",
+    authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop", // Woman portrait as placeholder for couple story
+    type: 'testimony',
+    duration: "04:20",
+    thumbnail: "https://images.unsplash.com/photo-1529634597503-139d372668e3?q=80&w=800&auto=format&fit=crop", // Couple
+    src: "https://assets.mixkit.co/videos/preview/mixkit-couple-looking-at-the-sunset-4596-large.mp4",
+    views: "1.5k",
+    date: "Engaged",
+    timestamp: Date.now() - 50000000,
+    tags: ["#Engagement", "#Waiting", "#Testimony"],
+    description: "\"I never thought I'd find someone who respected my choice to wait. This app didn't just find me a date; it found me my future husband.\""
+  },
+  {
+    id: 't3',
+    title: "Serious & Intentional",
+    author: "Michael",
+    authorAvatar: "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=200&auto=format&fit=crop", // Winter/Snowy vibe
+    type: 'testimony',
+    duration: "02:15",
+    thumbnail: "https://images.unsplash.com/photo-1454496522488-7a8e488e8606?q=80&w=800&auto=format&fit=crop", // Winter landscape
+    src: "https://assets.mixkit.co/videos/preview/mixkit-man-walking-in-the-snow-at-sunset-4164-large.mp4",
+    views: "542",
+    date: "Member since 2023",
+    timestamp: Date.now() - 200000000,
+    tags: ["#Community", "#IntentionalDating"],
+    description: "\"The community here is different. It's respectful, serious, and intentional. Highly recommend for anyone serious about marriage.\""
+  },
+  {
     id: '2',
     title: "Ocean of Grace (Live)",
     author: "Hillsong United",
+    authorAvatar: "https://images.unsplash.com/photo-1493225255756-d9584f8606e9?fit=crop&w=150&h=150",
     type: 'worship',
     duration: "08:15",
     thumbnail: "https://images.unsplash.com/photo-1516280440614-6697288d5d38?q=80&w=800&auto=format&fit=crop",
@@ -70,6 +119,7 @@ const MOCK_MEDIA: MediaItem[] = [
     id: '4',
     title: "Overcoming Anxiety",
     author: "Joyce Meyer",
+    authorAvatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?fit=crop&w=150&h=150",
     type: 'sermon',
     duration: "28:45",
     thumbnail: "https://images.unsplash.com/photo-1629215037466-4c9c864b971c?q=80&w=800&auto=format&fit=crop",
@@ -440,7 +490,8 @@ export const MediaLibrary: React.FC = () => {
                 <div className="flex justify-between items-start mb-2">
                   <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                     item.type === 'worship' ? 'bg-purple-100 text-purple-700' : 
-                    item.type === 'sermon' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'
+                    item.type === 'sermon' ? 'bg-blue-100 text-blue-700' : 
+                    item.type === 'testimony' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'
                   }`}>
                     {item.type}
                   </span>
@@ -452,7 +503,17 @@ export const MediaLibrary: React.FC = () => {
                 <h3 className="font-bold text-slate-900 leading-tight mb-1 group-hover:text-indigo-600 transition-colors line-clamp-2">
                   {item.title}
                 </h3>
-                <p className="text-sm text-slate-500 mb-3">{item.author}</p>
+                
+                <div className="flex items-center gap-2 mt-1 mb-3">
+                   {item.authorAvatar ? (
+                     <img src={item.authorAvatar} alt="" className="w-5 h-5 rounded-full object-cover border border-slate-200" />
+                   ) : (
+                     <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
+                       {item.author[0]}
+                     </div>
+                   )}
+                   <p className="text-sm text-slate-500 line-clamp-1">{item.author}</p>
+                </div>
                 
                 <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-50 text-xs text-slate-400">
                    <span className="flex items-center gap-1"><PlayCircle className="w-3 h-3" /> {item.views}</span>
@@ -556,7 +617,12 @@ export const MediaLibrary: React.FC = () => {
                     <div>
                        <h2 className="text-xl font-bold text-white mb-2 leading-snug">{activeMedia.title}</h2>
                        <div className="flex items-center justify-between text-sm text-slate-400 mb-4">
-                          <span className="font-medium text-indigo-400">{activeMedia.author}</span>
+                          <div className="flex items-center gap-2">
+                             {activeMedia.authorAvatar && (
+                               <img src={activeMedia.authorAvatar} className="w-6 h-6 rounded-full object-cover" alt="" />
+                             )}
+                             <span className="font-medium text-indigo-400">{activeMedia.author}</span>
+                          </div>
                           <span>{activeMedia.date}</span>
                        </div>
                        
