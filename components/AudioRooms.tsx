@@ -92,32 +92,77 @@ const AudioRooms: React.FC<AudioRoomsProps> = ({ rooms, activeRoom, onJoinRoom, 
     setReactions(prev => [...prev, newReaction]);
   };
 
-  const VideoTile: React.FC<{ participant: RoomParticipant; isLarge?: boolean }> = ({ participant, isLarge }) => (
-    <div className={`relative bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-lg group transition-all ${isLarge ? 'h-full' : 'aspect-video'}`}>
-      <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
-        {participant.isVideoOn ? (
-           <img 
-            src={participant.avatar} 
-            alt={participant.name} 
-            className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity" 
-          />
-        ) : (
-          <div className="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
-             {participant.name.charAt(0)}
+  const VideoTile: React.FC<{ participant: RoomParticipant; isLarge?: boolean }> = ({ participant, isLarge }) => {
+    const isSpeaking = participant.isSpeaking && !participant.isMuted;
+    
+    return (
+      <div className={`relative bg-slate-800 rounded-2xl overflow-hidden transition-all duration-300 transform 
+        ${isLarge ? 'h-full w-full' : 'aspect-video w-full'}
+        ${isSpeaking ? 'ring-2 ring-green-500 shadow-[0_0_20px_rgba(34,197,94,0.4)] scale-[1.02] z-10' : 'border border-slate-700 hover:border-slate-600'}
+      `}>
+        {/* Main Video/Avatar Content */}
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-850">
+          {participant.isVideoOn ? (
+             <img 
+              src={participant.avatar} 
+              alt={participant.name} 
+              className="w-full h-full object-cover" 
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+               <div className={`rounded-full flex items-center justify-center font-bold text-white shadow-2xl transition-all duration-300 ${isSpeaking ? 'w-24 h-24 bg-indigo-600 text-3xl animate-pulse ring-4 ring-indigo-500/30' : 'w-20 h-20 bg-slate-700 text-2xl'}`}>
+                 {participant.name.charAt(0)}
+               </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/30 pointer-events-none" />
+
+        {/* Top Indicators */}
+        <div className="absolute top-3 left-3 flex gap-2">
+            {participant.role === 'prayer_leader' && (
+                <span className="bg-indigo-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm border border-indigo-500/50">
+                    <BadgeCheck className="w-3 h-3" /> Host
+                </span>
+            )}
+            {participant.isHandRaised && (
+                <span className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm animate-bounce">
+                    <Hand className="w-3 h-3" /> Hand Raised
+                </span>
+            )}
+        </div>
+
+        {/* Bottom Info Bar */}
+        <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
+          <div className="flex flex-col">
+             <span className="text-white text-sm font-semibold shadow-black drop-shadow-md">{participant.name}</span>
+             <span className="text-[10px] text-slate-300 font-medium capitalize flex items-center gap-1">
+                {participant.role.replace('_', ' ')}
+             </span>
           </div>
-        )}
+          
+          <div className="flex gap-2">
+            {participant.isMuted ? (
+               <div className="w-7 h-7 bg-red-500/90 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-red-400/50">
+                  <MicOff className="w-3.5 h-3.5 text-white" />
+               </div>
+            ) : (
+               <div className="w-7 h-7 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10">
+                  <div className={`w-2.5 h-2.5 rounded-full bg-green-400 ${isSpeaking ? 'animate-ping' : ''}`}></div>
+               </div>
+            )}
+            {!participant.isVideoOn && (
+               <div className="w-7 h-7 bg-slate-700/80 backdrop-blur-md rounded-full flex items-center justify-center border border-slate-600">
+                  <VideoOff className="w-3.5 h-3.5 text-slate-300" />
+               </div>
+            )}
+          </div>
+        </div>
       </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      <div className="absolute bottom-3 left-3 text-white text-sm font-medium flex items-center gap-2 drop-shadow-md">
-        <span>{participant.name}</span>
-        {participant.isMuted && <MicOff className="w-3 h-3 text-red-400" />}
-        {participant.isHandRaised && <Hand className="w-3 h-3 text-yellow-400" />}
-      </div>
-      {participant.isSpeaking && !participant.isMuted && (
-        <div className="absolute top-3 right-3 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-900 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.6)]"></div>
-      )}
-    </div>
-  );
+    );
+  };
 
   // ================= ACTIVE ROOM VIEW =================
   if (activeRoom) {
@@ -148,14 +193,14 @@ const AudioRooms: React.FC<AudioRoomsProps> = ({ rooms, activeRoom, onJoinRoom, 
         <div className={`flex-1 flex flex-col transition-all duration-300 ${isChatOpen ? 'mr-80' : ''}`}>
           <div className="h-14 px-4 flex items-center justify-between z-10 shrink-0 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm">
              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-red-600/20 text-red-500 px-2 py-1 rounded-md">
+                <div className="flex items-center gap-2 bg-red-600/20 text-red-500 px-2 py-1 rounded-md border border-red-500/20">
                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                    <span className="text-xs font-bold tracking-wider">LIVE</span>
                 </div>
                 <h2 className="text-sm font-medium text-slate-200">{activeRoom.title}</h2>
              </div>
              <div className="flex items-center gap-2">
-                <div className="bg-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2 text-slate-400">
+                <div className="bg-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2 text-slate-400 border border-slate-700">
                    <Users className="w-4 h-4" />
                    <span className="text-xs font-bold">{participants.length + 1}</span>
                 </div>
@@ -182,18 +227,43 @@ const AudioRooms: React.FC<AudioRoomsProps> = ({ rooms, activeRoom, onJoinRoom, 
                    </div>
                 </div>
              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full content-center">
-                   <div className="relative bg-slate-800 rounded-xl overflow-hidden border border-slate-700 shadow-lg group aspect-video">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 h-full content-center p-2">
+                   {/* Me Tile */}
+                   <div className={`relative bg-slate-800 rounded-2xl overflow-hidden aspect-video transition-all duration-300 border border-slate-700 group ${isMicOn && 'ring-2 ring-green-500 shadow-[0_0_20px_rgba(34,197,94,0.4)]'}`}>
                       <div className="absolute inset-0 flex items-center justify-center bg-slate-850">
                          {isCamOn ? (
                             <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36?fit=crop&w=600&h=600" alt="Me" className="w-full h-full object-cover transform scale-x-[-1]" />
-                         ) : <div className="w-20 h-20 rounded-full bg-slate-700 flex items-center justify-center text-2xl font-bold text-white">You</div>}
+                         ) : (
+                           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900">
+                              <div className="w-20 h-20 rounded-full bg-slate-700 flex items-center justify-center text-2xl font-bold text-white shadow-xl">You</div>
+                           </div>
+                         )}
                       </div>
-                      <div className="absolute bottom-3 left-3 text-white text-sm font-medium flex items-center gap-2 drop-shadow-md">
-                         <span>You</span>
-                         {!isMicOn && <MicOff className="w-3 h-3 text-red-400" />}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
+                      
+                      <div className="absolute top-3 left-3 flex gap-2">
+                         {isHandRaised && (
+                             <span className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm animate-bounce">
+                                <Hand className="w-3 h-3" /> Hand Raised
+                            </span>
+                         )}
+                      </div>
+
+                      <div className="absolute bottom-3 left-3 right-3 flex justify-between items-center">
+                         <span className="text-white text-sm font-semibold shadow-black drop-shadow-md">You (Me)</span>
+                         <div className="flex gap-2">
+                            <div className="w-7 h-7 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10">
+                                {isMicOn ? (
+                                    <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></div>
+                                ) : (
+                                    <MicOff className="w-3.5 h-3.5 text-red-400" />
+                                )}
+                            </div>
+                         </div>
                       </div>
                    </div>
+                   
+                   {/* Other Participants */}
                    {participants.map(p => <VideoTile key={p.id} participant={p} />)}
                 </div>
              )}
@@ -209,11 +279,11 @@ const AudioRooms: React.FC<AudioRoomsProps> = ({ rooms, activeRoom, onJoinRoom, 
              </div>
 
              <div className="bg-slate-800 rounded-full px-6 py-3 flex items-center gap-3 shadow-2xl border border-slate-700">
-                <button onClick={() => setIsMicOn(!isMicOn)} className={`p-3 rounded-full transition-all ${isMicOn ? 'bg-slate-600 hover:bg-slate-500' : 'bg-red-500 hover:bg-red-600'}`}>{isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}</button>
-                <button onClick={() => setIsCamOn(!isCamOn)} className={`p-3 rounded-full transition-all ${isCamOn ? 'bg-slate-600 hover:bg-slate-500' : 'bg-red-500 hover:bg-red-600'}`}>{isCamOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}</button>
-                <button onClick={() => setIsHandRaised(!isHandRaised)} className={`p-3 rounded-full transition-all ${isHandRaised ? 'bg-blue-600' : 'bg-slate-700 hover:bg-slate-600'}`}><Hand className="w-5 h-5" /></button>
-                <button onClick={() => setIsScreenSharing(!isScreenSharing)} className={`p-3 rounded-full transition-all ${isScreenSharing ? 'bg-blue-600' : 'bg-slate-700 hover:bg-slate-600'}`}><Monitor className="w-5 h-5" /></button>
-                <button onClick={() => setIsChatOpen(!isChatOpen)} className={`p-3 rounded-full transition-all ${isChatOpen ? 'bg-blue-600' : 'bg-slate-700 hover:bg-slate-600'}`}><MessageSquare className="w-5 h-5" /></button>
+                <button onClick={() => setIsMicOn(!isMicOn)} className={`p-3 rounded-full transition-all ${isMicOn ? 'bg-slate-600 hover:bg-slate-500' : 'bg-red-500 hover:bg-red-600 text-white'}`}>{isMicOn ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}</button>
+                <button onClick={() => setIsCamOn(!isCamOn)} className={`p-3 rounded-full transition-all ${isCamOn ? 'bg-slate-600 hover:bg-slate-500' : 'bg-red-500 hover:bg-red-600 text-white'}`}>{isCamOn ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}</button>
+                <button onClick={() => setIsHandRaised(!isHandRaised)} className={`p-3 rounded-full transition-all ${isHandRaised ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}`}><Hand className="w-5 h-5" /></button>
+                <button onClick={() => setIsScreenSharing(!isScreenSharing)} className={`p-3 rounded-full transition-all ${isScreenSharing ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}`}><Monitor className="w-5 h-5" /></button>
+                <button onClick={() => setIsChatOpen(!isChatOpen)} className={`p-3 rounded-full transition-all ${isChatOpen ? 'bg-blue-600 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-300'}`}><MessageSquare className="w-5 h-5" /></button>
                 <div className="w-px h-8 bg-slate-600 mx-2"></div>
                 <button onClick={onLeaveRoom} className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-full font-medium flex items-center gap-2 transition-colors"><PhoneOff className="w-4 h-4" /><span className="hidden sm:inline">End</span></button>
              </div>

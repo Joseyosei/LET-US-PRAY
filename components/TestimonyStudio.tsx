@@ -16,13 +16,18 @@ export const TestimonyStudio: React.FC = () => {
   
   // Video Player State
   const videoRef = useRef<HTMLVideoElement>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
+  
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  
+  // Trimming State
   const [trimStart, setTrimStart] = useState(0);
-  const [trimEnd, setTrimEnd] = useState(0); // Will init to duration
+  const [trimEnd, setTrimEnd] = useState(0);
   const [isTrimming, setIsTrimming] = useState(false);
+  const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -34,15 +39,68 @@ export const TestimonyStudio: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Handle Dragging Logic for Trim Handles
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggingHandle || !timelineRef.current || !duration) return;
+      e.preventDefault(); // Prevent text selection while dragging
+
+      const rect = timelineRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      // Calculate percentage, clamped 0-1
+      const percentage = Math.max(0, Math.min(1, x / rect.width));
+      const newTime = percentage * duration;
+      const minDuration = 1; // Minimum 1 second video
+
+      if (draggingHandle === 'start') {
+        // Clamp between 0 and trimEnd - minDuration
+        const maxStart = Math.max(0, trimEnd - minDuration); 
+        const validStart = Math.min(Math.max(0, newTime), maxStart);
+        
+        setTrimStart(validStart);
+        // Update preview to start point while dragging
+        if (videoRef.current) {
+             videoRef.current.currentTime = validStart;
+             setCurrentTime(validStart);
+        }
+      } else {
+        // Clamp between trimStart + minDuration and duration
+        const minEnd = Math.min(duration, trimStart + minDuration);
+        const validEnd = Math.max(Math.min(duration, newTime), minEnd);
+        
+        setTrimEnd(validEnd);
+        // Update preview to end point while dragging
+        if (videoRef.current) {
+             videoRef.current.currentTime = validEnd;
+             setCurrentTime(validEnd);
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      setDraggingHandle(null);
+    };
+
+    if (draggingHandle) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingHandle, duration, trimEnd, trimStart]);
+
   useEffect(() => {
     // Loop playback within trim range
-    if (videoRef.current && !isTrimming && isPlaying) {
+    if (videoRef.current && !isTrimming && isPlaying && !draggingHandle) {
       if (currentTime >= trimEnd) {
         videoRef.current.currentTime = trimStart;
         videoRef.current.play();
       }
     }
-  }, [currentTime, trimEnd, trimStart, isTrimming, isPlaying]);
+  }, [currentTime, trimEnd, trimStart, isTrimming, isPlaying, draggingHandle]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -54,6 +112,7 @@ export const TestimonyStudio: React.FC = () => {
       setCurrentTime(0);
       setDuration(0);
       setIsPlaying(false);
+      setIsTrimming(false);
     }
   };
 
@@ -69,6 +128,7 @@ export const TestimonyStudio: React.FC = () => {
         setCurrentTime(0);
         setDuration(0);
         setIsPlaying(false);
+        setIsTrimming(false);
       }
     }
   };
@@ -83,7 +143,7 @@ export const TestimonyStudio: React.FC = () => {
   };
 
   const handleTimeUpdate = () => {
-    if (videoRef.current) {
+    if (videoRef.current && !draggingHandle) {
       setCurrentTime(videoRef.current.currentTime);
     }
   };
@@ -94,7 +154,7 @@ export const TestimonyStudio: React.FC = () => {
         videoRef.current.pause();
       } else {
         // If we are at the end of the trim, restart from trim start
-        if (currentTime >= trimEnd) {
+        if (currentTime >= trimEnd - 0.1) {
           videoRef.current.currentTime = trimStart;
         }
         videoRef.current.play();
@@ -171,6 +231,7 @@ export const TestimonyStudio: React.FC = () => {
     setVideoPreview(null);
     setUploadSuccess(false);
     setIsPlaying(false);
+    setIsTrimming(false);
   };
 
   return (
@@ -208,7 +269,7 @@ export const TestimonyStudio: React.FC = () => {
                   />
                   
                   {/* Custom Controls Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                      
                      {/* Top Bar Actions */}
                      <div className="absolute top-4 right-4 flex gap-2">
@@ -217,124 +278,105 @@ export const TestimonyStudio: React.FC = () => {
                         </button>
                      </div>
 
-                     {/* Scrubber & Trimmer */}
-                     <div className="mb-4 relative h-10 flex items-center">
-                        {/* Trim Background Track */}
-                        <div className="absolute inset-x-0 h-1 bg-white/20 rounded-full"></div>
+                     {/* Scrubber & Trimmer Container */}
+                     <div ref={timelineRef} className="mb-4 relative h-8 flex items-center select-none group/timeline cursor-pointer">
+                        {/* Track Background */}
+                        <div className="absolute inset-x-0 h-1.5 bg-white/20 rounded-full backdrop-blur-sm"></div>
                         
-                        {/* Trim Active Zone */}
+                        {/* Trimmed Zone (Active Play Area) */}
                         <div 
-                          className="absolute h-1 bg-indigo-500/50 rounded-full"
+                          className="absolute h-1.5 bg-indigo-500 rounded-full opacity-80"
                           style={{
                              left: `${(trimStart / duration) * 100}%`,
                              width: `${((trimEnd - trimStart) / duration) * 100}%`
                           }}
                         ></div>
 
-                        {/* Playhead Scrubber */}
+                        {/* Playhead Progress (within trim) */}
+                        {/* We show progress relative to total duration for visual consistency */}
+                        <div 
+                           className="absolute h-1.5 bg-indigo-400 rounded-full"
+                           style={{
+                              left: `${(trimStart / duration) * 100}%`,
+                              width: `${(Math.max(0, currentTime - trimStart) / duration) * 100}%`
+                           }}
+                        ></div>
+
+                        {/* Interactive Range Input for Scrubbing */}
                         <input 
                           type="range" 
                           min={0} 
                           max={duration} 
+                          step={0.01}
                           value={currentTime} 
                           onChange={handleScrubberChange}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                          disabled={draggingHandle !== null}
                         />
+
+                        {/* Playhead Handle */}
                         <div 
-                           className="absolute w-3 h-3 bg-white rounded-full shadow pointer-events-none z-10 transition-all duration-75"
+                           className="absolute w-3 h-3 bg-white rounded-full shadow-lg pointer-events-none z-20 transition-transform duration-75 scale-100"
                            style={{ left: `${(currentTime / duration) * 100}%`, transform: 'translateX(-50%)' }}
                         ></div>
                         
-                        {/* Start Trim Handle (Visual only for now, would need range input logic for full drag) */}
+                        {/* DRAGGABLE START HANDLE */}
                         <div 
-                           className="absolute h-4 w-1 bg-yellow-400 z-10 cursor-ew-resize"
+                           className="absolute h-8 w-6 -ml-3 top-1/2 -translate-y-1/2 z-30 cursor-ew-resize group/handle touch-none flex items-center justify-center"
                            style={{ left: `${(trimStart / duration) * 100}%` }}
-                        ></div>
-                         {/* End Trim Handle */}
-                        <div 
-                           className="absolute h-4 w-1 bg-yellow-400 z-10 cursor-ew-resize"
-                           style={{ left: `${(trimEnd / duration) * 100}%` }}
-                        ></div>
-                     </div>
-
-                     {/* Trimming Inputs (Visible when Trim mode active) */}
-                     {isTrimming && (
-                        <div className="flex justify-between items-center bg-black/60 rounded-lg p-2 mb-2 backdrop-blur-sm animate-in slide-in-from-bottom-2">
-                           <div className="flex flex-col">
-                              <span className="text-[10px] text-yellow-400 uppercase font-bold">Start</span>
-                              <span className="text-xs text-white font-mono">{formatTime(trimStart)}</span>
-                              <input 
-                                type="range" min={0} max={trimEnd - 1} step={0.1}
-                                value={trimStart}
-                                onChange={(e) => {
-                                   const val = parseFloat(e.target.value);
-                                   setTrimStart(val);
-                                   if(currentTime < val) {
-                                      videoRef.current!.currentTime = val;
-                                      setCurrentTime(val);
-                                   }
-                                }}
-                                className="w-20 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer mt-1"
-                              />
-                           </div>
-                           <div className="text-xs text-slate-400 font-mono">Trim Mode</div>
-                           <div className="flex flex-col text-right">
-                              <span className="text-[10px] text-yellow-400 uppercase font-bold">End</span>
-                              <span className="text-xs text-white font-mono">{formatTime(trimEnd)}</span>
-                              <input 
-                                type="range" min={trimStart + 1} max={duration} step={0.1}
-                                value={trimEnd}
-                                onChange={(e) => {
-                                  const val = parseFloat(e.target.value);
-                                  setTrimEnd(val);
-                                  if(currentTime > val) {
-                                    videoRef.current!.currentTime = val;
-                                    setCurrentTime(val);
-                                  }
-                                }}
-                                className="w-20 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer mt-1"
-                              />
-                           </div>
+                           onMouseDown={(e) => { e.stopPropagation(); setDraggingHandle('start'); }}
+                        >
+                            <div className={`w-1.5 h-6 bg-yellow-400 rounded-full shadow-lg transition-transform ${draggingHandle === 'start' ? 'scale-110 bg-yellow-300' : 'group-hover/handle:scale-110'}`}></div>
+                            {/* Time Tooltip */}
+                            <div className={`absolute bottom-full mb-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded font-mono ${draggingHandle === 'start' ? 'opacity-100' : 'opacity-0 group-hover/handle:opacity-100'} transition-opacity pointer-events-none`}>
+                                {formatTime(trimStart)}
+                            </div>
                         </div>
-                     )}
+
+                        {/* DRAGGABLE END HANDLE */}
+                        <div 
+                           className="absolute h-8 w-6 -ml-3 top-1/2 -translate-y-1/2 z-30 cursor-ew-resize group/handle touch-none flex items-center justify-center"
+                           style={{ left: `${(trimEnd / duration) * 100}%` }}
+                           onMouseDown={(e) => { e.stopPropagation(); setDraggingHandle('end'); }}
+                        >
+                             <div className={`w-1.5 h-6 bg-yellow-400 rounded-full shadow-lg transition-transform ${draggingHandle === 'end' ? 'scale-110 bg-yellow-300' : 'group-hover/handle:scale-110'}`}></div>
+                             {/* Time Tooltip */}
+                             <div className={`absolute bottom-full mb-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded font-mono ${draggingHandle === 'end' ? 'opacity-100' : 'opacity-0 group-hover/handle:opacity-100'} transition-opacity pointer-events-none`}>
+                                {formatTime(trimEnd)}
+                             </div>
+                        </div>
+                     </div>
 
                      {/* Control Bar */}
                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                           <button onClick={togglePlay} className="text-white hover:text-indigo-400 transition-colors">
+                           <button onClick={togglePlay} className="text-white hover:text-indigo-400 transition-colors p-1">
                               {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current" />}
                            </button>
-                           <button onClick={toggleMute} className="text-white hover:text-indigo-400 transition-colors">
+                           <button onClick={toggleMute} className="text-white hover:text-indigo-400 transition-colors p-1">
                               {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                            </button>
-                           <span className="text-xs font-mono text-white/80">
-                              {formatTime(currentTime)} / {formatTime(duration)}
+                           <span className="text-xs font-mono text-white/90">
+                              {formatTime(currentTime)} <span className="text-white/50">/</span> {formatTime(duration)}
                            </span>
                         </div>
                         
                         <div className="flex gap-3">
                            <button 
-                             onClick={() => setIsTrimming(!isTrimming)}
-                             className={`p-2 rounded-full transition-colors ${isTrimming ? 'bg-yellow-500 text-slate-900' : 'bg-white/10 text-white hover:bg-white/20'}`}
-                             title="Trim Video"
-                           >
-                              <Scissors className="w-4 h-4" />
-                           </button>
-                           <button 
                              onClick={() => { setTrimStart(0); setTrimEnd(duration); }}
-                             className="p-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors"
+                             className="px-3 py-1.5 bg-white/10 text-white text-xs rounded-full hover:bg-white/20 transition-colors flex items-center gap-1.5"
                              title="Reset Trim"
                            >
-                              <RotateCcw className="w-4 h-4" />
+                              <RotateCcw className="w-3 h-3" /> Reset
                            </button>
                         </div>
                      </div>
                   </div>
 
                   {/* Big Play Button (Center) */}
-                  {!isPlaying && (
+                  {!isPlaying && !draggingHandle && (
                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-16 h-16 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20">
+                        <div className="w-16 h-16 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20 shadow-xl">
                            <Play className="w-8 h-8 text-white fill-white ml-1" />
                         </div>
                      </div>
