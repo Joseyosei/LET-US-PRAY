@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, Radio, Plus, Menu, Settings, Layout, LogOut, Mic, EyeOff, X, Video } from 'lucide-react';
+import { Home, Radio, Plus, Menu, Settings, Layout, LogOut, Mic, EyeOff, X, Video, PlaySquare } from 'lucide-react';
 import PrayerFeed from './components/PrayerFeed';
 import AudioRooms from './components/AudioRooms';
 import { SettingsView } from './components/SettingsView';
 import { TestimonyStudio } from './components/TestimonyStudio';
+import { MediaLibrary } from './components/MediaLibrary';
 import { TopNav } from './components/TopNav';
 import { Auth } from './components/Auth';
 import { Prayer, AppView, AudioRoom, User, UserRole } from './types';
@@ -295,7 +296,7 @@ export default function App() {
 
   // Determine Context Aware FAB
   const getFloatingAction = () => {
-    if (activeRoom || currentView === AppView.STUDIO) return null; // No FAB in rooms or studio
+    if (activeRoom || currentView === AppView.STUDIO || currentView === AppView.MEDIA) return null; // No FAB in rooms, studio, media
     
     if (currentView === AppView.ROOMS) {
       return (
@@ -335,6 +336,8 @@ export default function App() {
             onCreateRoom={() => setIsCreateRoomModalOpen(true)}
           />
         );
+      case AppView.MEDIA:
+        return <MediaLibrary />;
       case AppView.STUDIO:
         return <TestimonyStudio />;
       case AppView.SETTINGS:
@@ -371,6 +374,12 @@ export default function App() {
             label="Live Rooms" 
             active={currentView === AppView.ROOMS} 
             onClick={() => setCurrentView(AppView.ROOMS)} 
+          />
+          <SidebarItem 
+            icon={<PlaySquare />} 
+            label="Media" 
+            active={currentView === AppView.MEDIA} 
+            onClick={() => setCurrentView(AppView.MEDIA)} 
           />
           <SidebarItem 
             icon={<Video />} 
@@ -426,6 +435,12 @@ export default function App() {
                 label="Live Rooms" 
                 active={currentView === AppView.ROOMS} 
                 onClick={() => { setCurrentView(AppView.ROOMS); setMobileMenuOpen(false); }} 
+              />
+              <SidebarItem 
+                icon={<PlaySquare />} 
+                label="Media" 
+                active={currentView === AppView.MEDIA} 
+                onClick={() => { setCurrentView(AppView.MEDIA); setMobileMenuOpen(false); }} 
               />
               <SidebarItem 
                 icon={<Video />} 

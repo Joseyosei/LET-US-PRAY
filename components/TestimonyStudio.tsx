@@ -58,15 +58,36 @@ export const TestimonyStudio: React.FC = () => {
     }
   };
 
-  const handleUpload = () => {
-    if (!videoFile || !title || !description) return;
+  const handleUpload = async () => {
+    if (!videoFile || !description) return;
+    
     setIsUploading(true);
-    // Simulate upload delay
-    setTimeout(() => {
+
+    try {
+      // Auto-optimize logic: If title is missing, we assume user wants AI to generate it before uploading
+      if (!title) {
+        try {
+          const result = await optimizeTestimony(description);
+          setTitle(result.title);
+          setDescription(result.summary);
+          setTags(result.tags);
+        } catch (e) {
+          console.error("Auto-optimization failed", e);
+          // Fallback title if AI fails
+          setTitle("My Testimony");
+        }
+      }
+
+      // Simulate upload delay directly after optimization/validation
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       setIsUploading(false);
       setUploadSuccess(true);
-      // Reset form partially after success if needed
-    }, 2000);
+      // Reset logic is handled by the "Upload Another" button or manual cleanup if desired
+    } catch (error) {
+      console.error("Upload process failed", error);
+      setIsUploading(false);
+    }
   };
 
   const clearVideo = () => {
@@ -245,7 +266,7 @@ export const TestimonyStudio: React.FC = () => {
                        {isUploading ? (
                          <>
                            <Loader2 className="w-5 h-5 animate-spin" />
-                           Uploading...
+                           {title ? 'Uploading...' : 'Polishing & Uploading...'}
                          </>
                        ) : (
                          <>

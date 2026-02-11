@@ -79,6 +79,7 @@ export interface ChatMessage {
 export enum AppView {
   FEED = 'FEED',
   ROOMS = 'ROOMS',
+  MEDIA = 'MEDIA',
   STUDIO = 'STUDIO',
   SETTINGS = 'SETTINGS'
 }
