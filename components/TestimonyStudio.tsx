@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Video, Upload, X, Play, Pause, Sparkles, Loader2, CheckCircle2, AlertCircle, Scissors, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { Video, Upload, X, Play, Pause, Sparkles, Loader2, CheckCircle2, AlertCircle, Scissors, RotateCcw, Volume2, VolumeX, Maximize2 } from 'lucide-react';
 import { optimizeTestimony } from '../services/geminiService';
 
 const formatTime = (seconds: number) => {
@@ -26,7 +26,6 @@ export const TestimonyStudio: React.FC = () => {
   // Trimming State
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
-  const [isTrimming, setIsTrimming] = useState(false);
   const [draggingHandle, setDraggingHandle] = useState<'start' | 'end' | null>(null);
 
   const [title, setTitle] = useState('');
@@ -94,13 +93,13 @@ export const TestimonyStudio: React.FC = () => {
 
   useEffect(() => {
     // Loop playback within trim range
-    if (videoRef.current && !isTrimming && isPlaying && !draggingHandle) {
+    if (videoRef.current && isPlaying && !draggingHandle) {
       if (currentTime >= trimEnd) {
         videoRef.current.currentTime = trimStart;
         videoRef.current.play();
       }
     }
-  }, [currentTime, trimEnd, trimStart, isTrimming, isPlaying, draggingHandle]);
+  }, [currentTime, trimEnd, trimStart, isPlaying, draggingHandle]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -112,7 +111,6 @@ export const TestimonyStudio: React.FC = () => {
       setCurrentTime(0);
       setDuration(0);
       setIsPlaying(false);
-      setIsTrimming(false);
     }
   };
 
@@ -128,7 +126,6 @@ export const TestimonyStudio: React.FC = () => {
         setCurrentTime(0);
         setDuration(0);
         setIsPlaying(false);
-        setIsTrimming(false);
       }
     }
   };
@@ -231,7 +228,6 @@ export const TestimonyStudio: React.FC = () => {
     setVideoPreview(null);
     setUploadSuccess(false);
     setIsPlaying(false);
-    setIsTrimming(false);
   };
 
   return (
@@ -269,11 +265,11 @@ export const TestimonyStudio: React.FC = () => {
                   />
                   
                   {/* Custom Controls Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                  <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4 transition-opacity duration-300 ${isPlaying ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
                      
                      {/* Top Bar Actions */}
                      <div className="absolute top-4 right-4 flex gap-2">
-                        <button onClick={clearVideo} className="p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors" title="Remove Video">
+                        <button onClick={clearVideo} className="p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors backdrop-blur-sm" title="Remove Video">
                           <X className="w-5 h-5" />
                         </button>
                      </div>
@@ -293,9 +289,8 @@ export const TestimonyStudio: React.FC = () => {
                         ></div>
 
                         {/* Playhead Progress (within trim) */}
-                        {/* We show progress relative to total duration for visual consistency */}
                         <div 
-                           className="absolute h-1.5 bg-indigo-400 rounded-full"
+                           className="absolute h-1.5 bg-indigo-300 rounded-full"
                            style={{
                               left: `${(trimStart / duration) * 100}%`,
                               width: `${(Math.max(0, currentTime - trimStart) / duration) * 100}%`
@@ -322,27 +317,27 @@ export const TestimonyStudio: React.FC = () => {
                         
                         {/* DRAGGABLE START HANDLE */}
                         <div 
-                           className="absolute h-8 w-6 -ml-3 top-1/2 -translate-y-1/2 z-30 cursor-ew-resize group/handle touch-none flex items-center justify-center"
+                           className="absolute h-10 w-6 -ml-3 top-1/2 -translate-y-1/2 z-30 cursor-ew-resize group/handle touch-none flex items-center justify-center"
                            style={{ left: `${(trimStart / duration) * 100}%` }}
                            onMouseDown={(e) => { e.stopPropagation(); setDraggingHandle('start'); }}
                         >
-                            <div className={`w-1.5 h-6 bg-yellow-400 rounded-full shadow-lg transition-transform ${draggingHandle === 'start' ? 'scale-110 bg-yellow-300' : 'group-hover/handle:scale-110'}`}></div>
+                            <div className={`w-1.5 h-6 bg-yellow-400 rounded-full shadow-lg transition-transform ${draggingHandle === 'start' ? 'scale-125 bg-yellow-300' : 'group-hover/handle:scale-110'}`}></div>
                             {/* Time Tooltip */}
-                            <div className={`absolute bottom-full mb-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded font-mono ${draggingHandle === 'start' ? 'opacity-100' : 'opacity-0 group-hover/handle:opacity-100'} transition-opacity pointer-events-none`}>
-                                {formatTime(trimStart)}
+                            <div className={`absolute bottom-full mb-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded font-mono ${draggingHandle === 'start' ? 'opacity-100' : 'opacity-0 group-hover/handle:opacity-100'} transition-opacity pointer-events-none whitespace-nowrap`}>
+                                Start: {formatTime(trimStart)}
                             </div>
                         </div>
 
                         {/* DRAGGABLE END HANDLE */}
                         <div 
-                           className="absolute h-8 w-6 -ml-3 top-1/2 -translate-y-1/2 z-30 cursor-ew-resize group/handle touch-none flex items-center justify-center"
+                           className="absolute h-10 w-6 -ml-3 top-1/2 -translate-y-1/2 z-30 cursor-ew-resize group/handle touch-none flex items-center justify-center"
                            style={{ left: `${(trimEnd / duration) * 100}%` }}
                            onMouseDown={(e) => { e.stopPropagation(); setDraggingHandle('end'); }}
                         >
-                             <div className={`w-1.5 h-6 bg-yellow-400 rounded-full shadow-lg transition-transform ${draggingHandle === 'end' ? 'scale-110 bg-yellow-300' : 'group-hover/handle:scale-110'}`}></div>
+                             <div className={`w-1.5 h-6 bg-yellow-400 rounded-full shadow-lg transition-transform ${draggingHandle === 'end' ? 'scale-125 bg-yellow-300' : 'group-hover/handle:scale-110'}`}></div>
                              {/* Time Tooltip */}
-                             <div className={`absolute bottom-full mb-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded font-mono ${draggingHandle === 'end' ? 'opacity-100' : 'opacity-0 group-hover/handle:opacity-100'} transition-opacity pointer-events-none`}>
-                                {formatTime(trimEnd)}
+                             <div className={`absolute bottom-full mb-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded font-mono ${draggingHandle === 'end' ? 'opacity-100' : 'opacity-0 group-hover/handle:opacity-100'} transition-opacity pointer-events-none whitespace-nowrap`}>
+                                End: {formatTime(trimEnd)}
                              </div>
                         </div>
                      </div>
@@ -364,11 +359,15 @@ export const TestimonyStudio: React.FC = () => {
                         <div className="flex gap-3">
                            <button 
                              onClick={() => { setTrimStart(0); setTrimEnd(duration); }}
-                             className="px-3 py-1.5 bg-white/10 text-white text-xs rounded-full hover:bg-white/20 transition-colors flex items-center gap-1.5"
+                             className="px-3 py-1.5 bg-white/10 text-white text-xs rounded-full hover:bg-white/20 transition-colors flex items-center gap-1.5 backdrop-blur-sm"
                              title="Reset Trim"
                            >
                               <RotateCcw className="w-3 h-3" /> Reset
                            </button>
+                           <div className="px-3 py-1.5 bg-indigo-600/80 text-white text-xs rounded-full flex items-center gap-1.5 backdrop-blur-sm border border-indigo-500/50">
+                              <Scissors className="w-3 h-3" /> 
+                              {formatTime(trimEnd - trimStart)}
+                           </div>
                         </div>
                      </div>
                   </div>
@@ -376,8 +375,8 @@ export const TestimonyStudio: React.FC = () => {
                   {/* Big Play Button (Center) */}
                   {!isPlaying && !draggingHandle && (
                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-16 h-16 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20 shadow-xl">
-                           <Play className="w-8 h-8 text-white fill-white ml-1" />
+                        <div className="w-20 h-20 bg-black/30 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20 shadow-xl group-hover:scale-110 transition-transform">
+                           <Play className="w-10 h-10 text-white fill-white ml-1" />
                         </div>
                      </div>
                   )}
