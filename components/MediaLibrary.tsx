@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Clock, Heart, Share2, MoreVertical, PlayCircle, Headphones, Video, BookOpen, Search, Filter, X, Upload, Calendar, ChevronDown, Pause, Volume2, VolumeX, Maximize } from 'lucide-react';
+import { Play, Clock, Heart, Share2, MoreVertical, PlayCircle, Headphones, Video, BookOpen, Search, Filter, X, Upload, Calendar, ChevronDown, Pause, Volume2, VolumeX, Maximize, FileVideo } from 'lucide-react';
 
 interface MediaItem {
   id: string;
@@ -107,12 +107,20 @@ const MOCK_MEDIA: MediaItem[] = [
   }
 ];
 
+const formatTime = (seconds: number) => {
+  if (isNaN(seconds)) return "00:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
+
 export const MediaLibrary: React.FC = () => {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(MOCK_MEDIA);
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeMedia, setActiveMedia] = useState<MediaItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [isDragging, setIsDragging] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -178,15 +186,20 @@ export const MediaLibrary: React.FC = () => {
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-       // Reuse upload logic or separate it
        const file = e.dataTransfer.files[0];
        if (file.type.startsWith('video/')) {
-          // ... Create item logic similar to handleFileUpload
            const videoUrl = URL.createObjectURL(file);
            const newItem: MediaItem = {
             id: Date.now().toString(),
@@ -237,8 +250,33 @@ export const MediaLibrary: React.FC = () => {
 
   const toggleMute = () => {
     if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
+      const newMuted = !isMuted;
+      videoRef.current.muted = newMuted;
+      setIsMuted(newMuted);
+      // If unmuting and volume is 0, set to 0.5
+      if (!newMuted && volume === 0) {
+        setVolume(0.5);
+        videoRef.current.volume = 0.5;
+      }
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    if (videoRef.current) {
+      videoRef.current.volume = newVolume;
+      setIsMuted(newVolume === 0);
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (videoRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        videoRef.current.requestFullscreen();
+      }
     }
   };
 
@@ -246,11 +284,29 @@ export const MediaLibrary: React.FC = () => {
   useEffect(() => {
     setIsPlaying(false);
     setProgress(0);
+    if (videoRef.current) {
+      videoRef.current.load();
+    }
   }, [activeMedia]);
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50 h-full" onDragOver={handleDragOver} onDrop={handleDrop}>
+    <div 
+      className="flex-1 overflow-y-auto bg-slate-50 h-full relative" 
+      onDragOver={handleDragOver} 
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       
+      {/* Drag & Drop Overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 bg-indigo-600/90 backdrop-blur-sm flex flex-col items-center justify-center text-white animate-in fade-in duration-200">
+          <div className="bg-white/20 p-8 rounded-full mb-6 animate-bounce">
+            <Upload className="w-16 h-16" />
+          </div>
+          <h2 className="text-3xl font-bold">Drop video to upload</h2>
+        </div>
+      )}
+
       {/* Featured Hero Section */}
       <div className="relative h-[400px] w-full bg-slate-900 group">
          <img 
@@ -431,39 +487,56 @@ export const MediaLibrary: React.FC = () => {
                         onEnded={() => setIsPlaying(false)}
                         onClick={togglePlay}
                         poster={activeMedia.thumbnail}
+                        playsInline
                      />
                      
-                     {/* Custom Controls */}
+                     {/* Custom Controls Overlay */}
                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
-                        <div className="mb-2">
+                        <div className="mb-4">
                            <input 
                               type="range" 
                               min="0" 
                               max="100" 
                               value={progress} 
                               onChange={handleSeek}
-                              className="w-full h-1 bg-white/30 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-indigo-500 [&::-webkit-slider-thumb]:rounded-full"
+                              className="w-full h-1 bg-white/30 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-indigo-500 [&::-webkit-slider-thumb]:rounded-full hover:bg-white/40 transition-colors"
                            />
                         </div>
                         <div className="flex items-center justify-between">
                            <div className="flex items-center gap-4 text-white">
-                              <button onClick={togglePlay} className="hover:text-indigo-400">
-                                 {isPlaying ? <Pause className="w-6 h-6 fill-current" /> : <Play className="w-6 h-6 fill-current" />}
+                              <button onClick={togglePlay} className="hover:text-indigo-400 transition-colors">
+                                 {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current" />}
                               </button>
-                              <button onClick={toggleMute} className="hover:text-indigo-400">
-                                 {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                              </button>
+                              
+                              <div className="flex items-center gap-2 group/volume">
+                                <button onClick={toggleMute} className="hover:text-indigo-400 transition-colors">
+                                    {isMuted || volume === 0 ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                                </button>
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="1" 
+                                    step="0.05" 
+                                    value={isMuted ? 0 : volume} 
+                                    onChange={handleVolumeChange}
+                                    className="w-0 overflow-hidden group-hover/volume:w-20 transition-all duration-300 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-indigo-500 [&::-webkit-slider-thumb]:rounded-full"
+                                />
+                              </div>
+
+                              <span className="text-xs font-mono text-white/80 ml-2">
+                                {formatTime(videoRef.current?.currentTime || 0)} / {formatTime(videoRef.current?.duration || 0)}
+                              </span>
                            </div>
-                           <button className="text-white hover:text-indigo-400">
-                              <Maximize className="w-5 h-5" />
+                           <button onClick={toggleFullscreen} className="text-white hover:text-indigo-400 transition-colors">
+                              <Maximize className="w-6 h-6" />
                            </button>
                         </div>
                      </div>
 
                      {!isPlaying && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                           <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 shadow-lg">
-                              <Play className="w-8 h-8 fill-white text-white ml-1" />
+                           <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 shadow-lg">
+                              <Play className="w-10 h-10 fill-white text-white ml-1.5" />
                            </div>
                         </div>
                      )}
@@ -474,7 +547,7 @@ export const MediaLibrary: React.FC = () => {
               <div className="w-full md:w-[350px] lg:w-[400px] bg-slate-900 border-l border-slate-800 flex flex-col h-full overflow-hidden">
                  {/* Close Button Desktop */}
                  <div className="hidden md:flex justify-end p-2">
-                    <button onClick={() => setActiveMedia(null)} className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800">
+                    <button onClick={() => setActiveMedia(null)} className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition-colors">
                        <X className="w-5 h-5" />
                     </button>
                  </div>
@@ -488,10 +561,10 @@ export const MediaLibrary: React.FC = () => {
                        </div>
                        
                        <div className="flex gap-4 mb-6 border-b border-slate-800 pb-6">
-                           <button className="flex-1 bg-white text-slate-900 py-2 rounded-lg font-bold text-sm hover:bg-slate-100 flex items-center justify-center gap-2">
+                           <button className="flex-1 bg-white text-slate-900 py-2.5 rounded-lg font-bold text-sm hover:bg-slate-100 flex items-center justify-center gap-2 transition-colors">
                               <Heart className="w-4 h-4" /> Save
                            </button>
-                           <button className="flex-1 bg-slate-800 text-white py-2 rounded-lg font-bold text-sm hover:bg-slate-700 flex items-center justify-center gap-2">
+                           <button className="flex-1 bg-slate-800 text-white py-2.5 rounded-lg font-bold text-sm hover:bg-slate-700 flex items-center justify-center gap-2 transition-colors">
                               <Share2 className="w-4 h-4" /> Share
                            </button>
                        </div>
@@ -502,7 +575,7 @@ export const MediaLibrary: React.FC = () => {
                        </p>
                        <div className="flex flex-wrap gap-2">
                           {activeMedia.tags.map(tag => (
-                             <span key={tag} className="px-2 py-1 bg-slate-800 rounded text-xs text-slate-400">
+                             <span key={tag} className="px-2 py-1 bg-slate-800 rounded text-xs text-slate-400 border border-slate-700">
                                 {tag}
                              </span>
                           ))}
@@ -514,7 +587,7 @@ export const MediaLibrary: React.FC = () => {
                           <PlayCircle className="w-4 h-4 text-indigo-500" /> Up Next
                        </h3>
                        <div className="space-y-3">
-                          {relatedMedia.map(item => (
+                          {relatedMedia.length > 0 ? relatedMedia.map(item => (
                              <div 
                                 key={item.id} 
                                 className="flex gap-3 p-2 rounded-lg hover:bg-slate-800 cursor-pointer transition-colors group"
@@ -522,13 +595,18 @@ export const MediaLibrary: React.FC = () => {
                              >
                                 <div className="w-24 aspect-video bg-slate-800 rounded-md overflow-hidden relative flex-shrink-0">
                                    <img src={item.thumbnail} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" alt="" />
+                                   <div className="absolute bottom-1 right-1 bg-black/80 text-[8px] text-white px-1 rounded">
+                                      {item.duration}
+                                   </div>
                                 </div>
                                 <div>
-                                   <h4 className="text-sm font-medium text-slate-200 line-clamp-2 group-hover:text-white mb-1">{item.title}</h4>
+                                   <h4 className="text-sm font-medium text-slate-200 line-clamp-2 group-hover:text-white mb-1 transition-colors">{item.title}</h4>
                                    <p className="text-xs text-slate-500">{item.author}</p>
                                 </div>
                              </div>
-                          ))}
+                          )) : (
+                             <p className="text-sm text-slate-600 italic">No related media found.</p>
+                          )}
                        </div>
                     </div>
                  </div>

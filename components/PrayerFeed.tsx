@@ -181,6 +181,7 @@ const BibleCarousel: React.FC = () => {
 const PrayerCard: React.FC<{ prayer: Prayer; currentUserRole: UserRole; onInteract: (id: string, type: 'like' | 'pray' | 'request_prayer') => void }> = ({ prayer, currentUserRole, onInteract }) => {
   const [likeAnim, setLikeAnim] = useState(false);
   const [prayAnim, setPrayAnim] = useState(false);
+  const [requestAnim, setRequestAnim] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [isContentRevealed, setIsContentRevealed] = useState(false);
 
@@ -194,6 +195,11 @@ const PrayerCard: React.FC<{ prayer: Prayer; currentUserRole: UserRole; onIntera
     onInteract(prayer.id, 'pray');
   };
 
+  const handleRequestPrayer = () => {
+    setRequestAnim(true);
+    onInteract(prayer.id, 'request_prayer');
+  };
+
   useEffect(() => {
     if (likeAnim) { const timer = setTimeout(() => setLikeAnim(false), 300); return () => clearTimeout(timer); }
   }, [likeAnim]);
@@ -201,6 +207,10 @@ const PrayerCard: React.FC<{ prayer: Prayer; currentUserRole: UserRole; onIntera
   useEffect(() => {
     if (prayAnim) { const timer = setTimeout(() => setPrayAnim(false), 500); return () => clearTimeout(timer); }
   }, [prayAnim]);
+
+  useEffect(() => {
+    if (requestAnim) { const timer = setTimeout(() => setRequestAnim(false), 300); return () => clearTimeout(timer); }
+  }, [requestAnim]);
 
   const getRoleBadge = (role?: UserRole) => {
     if (prayer.isAnonymous) return null;
@@ -245,15 +255,22 @@ const PrayerCard: React.FC<{ prayer: Prayer; currentUserRole: UserRole; onIntera
 
       {/* Actions */}
       <div className="flex items-center justify-between border-t border-slate-50 pt-3">
-        <div className="flex gap-6">
-          <button onClick={handlePray} className="flex items-center gap-1.5 text-slate-500 hover:text-indigo-600 transition-colors group">
+        <div className="flex gap-4 sm:gap-6">
+          <button onClick={handlePray} title="I am praying for this" className="flex items-center gap-1.5 text-slate-500 hover:text-indigo-600 transition-colors group">
              <div className={prayAnim ? 'joyful-hop-anim' : ''}><Hand className={`w-5 h-5 ${prayer.prayingCount > 0 ? 'fill-indigo-50 text-indigo-600' : ''}`} /></div>
              <span className="text-sm font-medium">{prayer.prayingCount}</span>
           </button>
-          <button onClick={handleLike} className="flex items-center gap-1.5 text-slate-500 hover:text-blue-600 transition-colors">
+          
+          <button onClick={handleLike} title="Like" className="flex items-center gap-1.5 text-slate-500 hover:text-blue-600 transition-colors">
              <div className={likeAnim ? 'pop-anim' : ''}><ThumbsUp className={`w-4 h-4 ${prayer.likes > 0 ? 'fill-blue-50 text-blue-600' : ''}`} /></div>
              <span className="text-sm font-medium">{prayer.likes}</span>
           </button>
+
+          <button onClick={handleRequestPrayer} title="Pray for me too" className="flex items-center gap-1.5 text-slate-500 hover:text-rose-500 transition-colors">
+             <div className={requestAnim ? 'pop-anim' : ''}><Heart className={`w-4 h-4 ${prayer.prayersRequested > 0 ? 'fill-rose-50 text-rose-500' : ''}`} /></div>
+             <span className="text-sm font-medium">{prayer.prayersRequested}</span>
+          </button>
+
           <button className="flex items-center gap-1.5 text-slate-500 hover:text-slate-700">
              <MessageCircle className="w-4 h-4" />
              <span className="text-sm font-medium">{prayer.commentCount}</span>
