@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Video, Upload, X, Play, Pause, Sparkles, Loader2, CheckCircle2, AlertCircle, Scissors, RotateCcw, Volume2, VolumeX, Maximize2, Wand2, Key } from 'lucide-react';
+import { Video, Upload, X, Play, Pause, Sparkles, Loader2, CheckCircle2, AlertCircle, Scissors, RotateCcw, Volume2, VolumeX, Maximize2, Wand2, Key, Check, Copy } from 'lucide-react';
 import { optimizeTestimony, generateVideoTestimony } from '../services/geminiService';
 
 const formatTime = (seconds: number) => {
@@ -21,7 +21,6 @@ export const TestimonyStudio: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
   
   // Trimming State
   const [trimStart, setTrimStart] = useState(0);
@@ -32,6 +31,8 @@ export const TestimonyStudio: React.FC = () => {
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   
+  // AI Suggestion State
+  const [suggestions, setSuggestions] = useState<{title: string, summary: string, tags: string[]} | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -116,14 +117,13 @@ export const TestimonyStudio: React.FC = () => {
   const handleAIComposeVideo = async () => {
     if (!description.trim()) { alert("Please write a description first."); return; }
     
-    // @ts-ignore - Check for key selection per Veo rules
+    // @ts-ignore
     if (typeof window.aistudio !== 'undefined') {
       // @ts-ignore
       const hasKey = await window.aistudio.hasSelectedApiKey();
       if (!hasKey) {
         // @ts-ignore
         await window.aistudio.openSelectKey();
-        return; // Proceed after key is selected
       }
     }
 
@@ -148,9 +148,17 @@ export const TestimonyStudio: React.FC = () => {
       clearInterval(interval);
       setVideoPreview(videoUrl);
       setUploadSuccess(false);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Testimony generation failed. Ensure your API key has billing enabled.");
+      if (e.message?.includes("Requested entity was not found.")) {
+        // @ts-ignore
+        if (typeof window.aistudio !== 'undefined') {
+          // @ts-ignore
+          await window.aistudio.openSelectKey();
+        }
+      } else {
+        alert("Testimony generation failed. Ensure your API key has billing enabled.");
+      }
     } finally {
       setIsGeneratingVideo(false);
     }
@@ -159,16 +167,24 @@ export const TestimonyStudio: React.FC = () => {
   const handleOptimize = async () => {
     if (!description.trim()) return;
     setIsOptimizing(true);
+    setSuggestions(null);
     try {
       const result = await optimizeTestimony(description);
-      setTitle(result.title);
-      setDescription(result.summary);
-      setTags(result.tags);
+      setSuggestions(result);
     } catch (e) {
       console.error(e);
       alert("Could not optimize text.");
     } finally {
       setIsOptimizing(false);
+    }
+  };
+
+  const applySuggestions = () => {
+    if (suggestions) {
+      setTitle(suggestions.title);
+      setDescription(suggestions.summary);
+      setTags(suggestions.tags);
+      setSuggestions(null);
     }
   };
 
@@ -263,14 +279,61 @@ export const TestimonyStudio: React.FC = () => {
                  <div>
                    <label className="block text-xs font-black text-slate-400 mb-3 uppercase tracking-widest">What did God do in your life?</label>
                    <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Type your rough draft here..." className="w-full h-48 p-6 bg-slate-50 border border-slate-200 rounded-3xl text-lg font-medium focus:ring-4 focus:ring-indigo-500/20 outline-none resize-none transition-all placeholder:text-slate-300" />
+                   
                    <div className="flex flex-col sm:flex-row gap-4 mt-6">
-                     <button onClick={handleOptimize} disabled={isOptimizing || !description.trim()} className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 disabled:opacity-50 transition-all shadow-xl"><Wand2 className="w-4 h-4" /> POLISH TEXT</button>
-                     <button onClick={handleAIComposeVideo} disabled={isGeneratingVideo || !description.trim()} className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-xl shadow-indigo-200"><Sparkles className="w-4 h-4" /> VEO GENERATE</button>
-                   </div>
-                   <div className="mt-4 flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                     <AlertCircle className="w-3 h-3" /> Requires billing enabled API key
+                     <button 
+                       onClick={handleOptimize} 
+                       disabled={isOptimizing || !description.trim()} 
+                       className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 disabled:opacity-50 transition-all shadow-xl group"
+                     >
+                       {isOptimizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4 group-hover:rotate-12 transition-transform" />}
+                       POLISH TEXT
+                     </button>
+                     <button 
+                       onClick={handleAIComposeVideo} 
+                       disabled={isGeneratingVideo || !description.trim()} 
+                       className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-xl shadow-indigo-200"
+                     >
+                       <Sparkles className="w-4 h-4" /> VEO GENERATE
+                     </button>
                    </div>
                  </div>
+
+                 {/* AI SUGGESTIONS PREVIEW SECTION */}
+                 {suggestions && (
+                   <div className="bg-indigo-50 rounded-[2rem] p-8 border-2 border-indigo-200 animate-in zoom-in-95 duration-500 shadow-lg relative overflow-hidden">
+                      <div className="absolute top-0 right-0 p-4">
+                        <button onClick={() => setSuggestions(null)} className="text-indigo-400 hover:text-indigo-600"><X className="w-5 h-5" /></button>
+                      </div>
+                      <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4" /> AI SUGGESTIONS READY
+                      </h4>
+                      
+                      <div className="space-y-6 mb-8">
+                         <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Suggested Title</p>
+                            <p className="text-xl font-black text-slate-900 leading-tight">{suggestions.title}</p>
+                         </div>
+                         <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Polished Summary</p>
+                            <p className="text-sm font-bold text-slate-600 leading-relaxed italic">"{suggestions.summary}"</p>
+                         </div>
+                         <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Suggested Tags</p>
+                            <div className="flex flex-wrap gap-2">
+                               {suggestions.tags.map(t => <span key={t} className="bg-white px-3 py-1 rounded-full text-[10px] font-black text-indigo-600 border border-indigo-100">{t}</span>)}
+                            </div>
+                         </div>
+                      </div>
+                      
+                      <button 
+                        onClick={applySuggestions}
+                        className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl flex items-center justify-center gap-2"
+                      >
+                        <Check className="w-4 h-4" /> APPLY ALL SUGGESTIONS
+                      </button>
+                   </div>
+                 )}
 
                  <div className={`transition-all duration-500 space-y-6 ${isOptimizing ? 'opacity-30 blur-sm' : 'opacity-100'}`}>
                     <div>
@@ -305,10 +368,6 @@ export const TestimonyStudio: React.FC = () => {
                     <button onClick={handleUpload} disabled={!videoPreview || isUploading} className="w-full py-6 bg-slate-900 text-white font-black text-lg rounded-3xl shadow-2xl hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 uppercase tracking-tighter">
                        {isUploading ? <><Loader2 className="w-6 h-6 animate-spin" /> UPLOADING...</> : <><CheckCircle2 className="w-6 h-6" /> POST TESTIMONY</>}
                     </button>
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-start gap-4">
-                       <AlertCircle className="w-5 h-5 text-slate-400 shrink-0 mt-1" />
-                       <p className="text-xs font-bold text-slate-500 leading-relaxed uppercase tracking-widest">Every story is reviewed by our community team to ensure a safe, Christ-centered environment for all users.</p>
-                    </div>
                  </div>
                )}
             </div>

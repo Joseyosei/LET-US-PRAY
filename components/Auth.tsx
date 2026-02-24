@@ -103,8 +103,13 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         
         <div className="relative h-full flex flex-col justify-end p-8 pb-20 max-w-md mx-auto">
           <div className={`transition-all duration-1000 delay-300 transform ${showIntro ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-            <div className="w-16 h-16 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center mb-6 shadow-2xl">
-               <span className="font-bold text-2xl tracking-tighter text-white">LUP</span>
+            <div className="w-16 h-16 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center mb-6 shadow-2xl overflow-hidden">
+               <img 
+                 src="https://picsum.photos/seed/lup-logo/200/200" 
+                 alt="LET US PRAY Logo" 
+                 className="w-full h-full object-cover"
+                 referrerPolicy="no-referrer"
+               />
             </div>
             
             <h1 className="text-6xl font-black tracking-tighter mb-6 text-white leading-[0.9]">
@@ -155,7 +160,12 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
         <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
           <div className="flex justify-center">
-             <div className="bg-indigo-600 text-white p-3 rounded-xl text-2xl font-bold shadow-lg shadow-indigo-200">LUP</div>
+             <img 
+               src="https://picsum.photos/seed/lup-logo/200/200" 
+               alt="LET US PRAY Logo" 
+               className="w-16 h-16 rounded-2xl shadow-lg shadow-indigo-200 object-cover"
+               referrerPolicy="no-referrer"
+             />
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900 tracking-tight">
             {isForgotPassword ? 'Reset Password' : (isLogin ? 'Welcome back' : 'Join the community')}

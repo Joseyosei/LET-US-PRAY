@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Home, Radio, Plus, Menu, Settings, Layout, LogOut, Mic, EyeOff, X, Video, PlaySquare, Sparkles, MessageCircle } from 'lucide-react';
 import PrayerFeed from './components/PrayerFeed';
-import AudioRooms from './components/AudioRooms';
+// Use named import for AudioRooms as it is exported as a named constant
+import { AudioRooms } from './components/AudioRooms';
 import { SettingsView } from './components/SettingsView';
 import { TestimonyStudio } from './components/TestimonyStudio';
 import { MediaLibrary } from './components/MediaLibrary';
@@ -360,9 +361,17 @@ export default function App() {
       {/* Desktop Sidebar (Navigation Only) */}
       <div className="hidden md:flex w-64 flex-col border-r border-slate-200 bg-white z-40">
         <div className="h-16 flex items-center px-6 border-b border-slate-100">
-          <h1 className="text-xl font-bold text-indigo-700 tracking-tight flex items-center gap-2">
-            <span className="bg-indigo-600 text-white px-1.5 py-0.5 rounded text-sm">LUP</span> LET US PRAY
-          </h1>
+          <div className="flex items-center gap-3">
+            <img 
+              src="https://picsum.photos/seed/lup-logo/200/200" 
+              alt="LET US PRAY Logo" 
+              className="w-10 h-10 rounded-xl shadow-sm object-cover"
+              referrerPolicy="no-referrer"
+            />
+            <h1 className="text-xl font-bold text-indigo-700 tracking-tight">
+              LET US PRAY
+            </h1>
+          </div>
         </div>
         
         <nav className="flex-1 px-4 py-6 space-y-2">

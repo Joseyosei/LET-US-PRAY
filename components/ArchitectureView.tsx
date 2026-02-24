@@ -103,7 +103,7 @@ const ArchitectureView: React.FC = () => {
                 <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-bold h-fit">ON_CREATE</span>
                 <div>
                   <div className="font-medium">prayers/{'{id}'}</div>
-                  <div className="text-slate-600">Trigger Gemini moderation. If unsafe -> move to rejected. If safe -> Fan-out to followers' feeds.</div>
+                  <div className="text-slate-600">Trigger Gemini moderation. If unsafe → move to rejected. If safe → Fan-out to followers' feeds.</div>
                 </div>
               </li>
               <li className="flex gap-3">
